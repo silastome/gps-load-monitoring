@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UFCD 5425 - Monitorização de Carga GPS (IEFP)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans p-6">
+    <div class="max-w-6xl mx-auto space-y-6">
+        
+        <!-- Cabeçalho -->
+        <header class="bg-blue-900 text-white p-6 rounded-lg shadow-md flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold">UFCD 5425 — Sistema de Carga GPS</h1>
+                <p class="text-blue-200 text-sm">Projeto Final IEFP (FastAPI + SQLite)</p>
+            </div>
+            <div class="text-right">
+                <span class="bg-blue-700 text-xs px-3 py-1 rounded-full uppercase font-semibold">Servidor Ativo</span>
+            </div>
+        </header>
+
+        <!-- Resumo da Base de Dados -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white p-5 rounded-lg shadow border-l-4 border-blue-500">
+                <p class="text-xs font-bold text-gray-500 uppercase">Total Registos na BD</p>
+                <p class="text-3xl font-extrabold text-gray-800">{{ resumo.total_registos }}</p>
+            </div>
+            <div class="bg-white p-5 rounded-lg shadow border-l-4 border-green-500">
+                <p class="text-xs font-bold text-gray-500 uppercase">Atletas Registados</p>
+                <p class="text-3xl font-extrabold text-gray-800">{{ resumo.total_jogadores }}</p>
+            </div>
+            <div class="bg-white p-5 rounded-lg shadow border-l-4 border-purple-500">
+                <p class="text-xs font-bold text-gray-500 uppercase">Sessões Monitorizadas</p>
+                <p class="text-3xl font-extrabold text-gray-800">{{ resumo.total_sessoes }}</p>
+            </div>
+        </div>
+
+        <!-- Formulário de Upload -->
+        <div class="bg-white p-6 rounded-lg shadow">
+            <h2 class="text-lg font-bold mb-3 text-gray-700">Importar Novo CSV para a Base de Dados</h2>
+            <form id="uploadForm" class="flex items-center space-x-4">
+                <input type="file" id="csvFile" accept=".csv" class="border border-gray-300 p-2 rounded w-full max-w-md text-sm">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded text-sm transition">
+                    Carregar Ficheiro
+                </button>
+            </form>
+            <div id="uploadStatus" class="mt-3 text-sm font-semibold"></div>
+        </div>
+
+        <!-- Lista de Jogadores na BD -->
+        <div class="bg-white p-6 rounded-lg shadow">
+            <h2 class="text-lg font-bold mb-3 text-gray-700">Atletas Ingeridos na BD</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-gray-100 uppercase text-xs text-gray-600">
+                        <tr>
+                            <th class="p-3">ID</th>
+                            <th class="p-3">Nome do Atleta</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for j in jogadores %}
+                        <tr class="border-b">
+                            <td class="p-3 font-mono text-gray-500">{{ j.id }}</td>
+                            <td class="p-3 font-medium">{{ j.nome }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('csvFile');
+            const statusDiv = document.getElementById('uploadStatus');
+
+            if (!fileInput.files[0]) {
+                statusDiv.className = 'mt-3 text-sm text-red-600';
+                statusDiv.innerText = 'Selecione um ficheiro CSV primeiro.';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            statusDiv.className = 'mt-3 text-sm text-blue-600';
+            statusDiv.innerText = 'A guardar na base de dados...';
+
+            try {
+                const res = await fetch('/upload', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (res.ok) {
+                    statusDiv.className = 'mt-3 text-sm text-green-600';
+                    statusDiv.innerText = 'Dados importados com sucesso!';
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    statusDiv.className = 'mt-3 text-sm text-red-600';
+                    statusDiv.innerText = `Erro: ${data.detail}`;
+                }
+            } catch (err) {
+                statusDiv.className = 'mt-3 text-sm text-red-600';
+                statusDiv.innerText = 'Erro na ligação ao servidor.';
+            }
+        });
+    </script>
+</body>
+</html>
