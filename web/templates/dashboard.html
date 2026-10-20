@@ -6,6 +6,13 @@
     <title>Dashboard GPS — UFCD 5425</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            body { background-color: white !important; padding: 0 !important; }
+            .shadow-sm, .shadow-lg, .shadow { box-shadow: none !important; }
+        }
+    </style>
 </head>
 <body class="bg-gray-100 font-sans p-6">
     <div class="max-w-7xl mx-auto space-y-6">
@@ -16,9 +23,14 @@
                 <h1 class="text-2xl font-bold">⚽ Dashboard de Carga & Performance GPS</h1>
                 <p class="text-xs text-blue-300 mt-1">Monitorização Avançada de Atletas (UFCD 5425)</p>
             </div>
-            <a href="/reset" onclick="return confirm('Carregar novo ficheiro e limpar dados atuais?')" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2.5 px-4 rounded-xl transition shadow">
-                🔄 Carregar Novo CSV
-            </a>
+            <div class="flex items-center gap-3 no-print">
+                <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold py-2.5 px-4 rounded-xl transition shadow flex items-center gap-1.5">
+                    📄 Exportar PDF
+                </button>
+                <a href="/reset" onclick="return confirm('Carregar novo ficheiro e limpar dados atuais?')" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2.5 px-4 rounded-xl transition shadow">
+                    🔄 Carregar Novo CSV
+                </a>
+            </div>
         </div>
 
         {% if msg %}
