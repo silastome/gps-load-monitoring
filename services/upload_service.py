@@ -3,14 +3,14 @@ import pandas as pd
 from repositories import get_db_connection, reset_db
 
 def processar_csv_upload(contents: bytes) -> dict:
-    # 1. Limpa a base de dados anterior para garantir análise isolada da sessão enviada
+    # 1. Limpa a base de dados para garantir isolamento da sessão submetida
     reset_db()
 
     # 2. Ler CSV em memória
     df = pd.read_csv(io.BytesIO(contents))
     df.columns = [str(col).strip().lower() for col in df.columns]
 
-    # Mapeamento Flexível de Colunas (Plataforma Crua VS Tratada)
+    # Mapeamento Flexível de Colunas
     col_nome = next((c for c in ['player name', 'nome', 'player_name', 'atleta', 'player'] if c in df.columns), None)
     col_data = next((c for c in ['date', 'data', 'day'] if c in df.columns), None)
     col_md = next((c for c in ['microcycle_day', 'md', 'dia_microciclo', 'tags', 'session title', 'split name'] if c in df.columns), None)
@@ -26,7 +26,14 @@ def processar_csv_upload(contents: bytes) -> dict:
     col_dec = next((c for c in ['deceleration zone count: > 2 m/s/s', 'dec_count', 'decelerations', 'desaceleracoes'] if c in df.columns), None)
     col_dur = next((c for c in ['duration', 'duration_min', 'duracao'] if c in df.columns), None)
 
-    # Normalização de Distância (KM -> Metros se necessário)
+    # 3. Anonimização Automática (Mapeia nomes reais para "Atleta 01", "Atleta 02", etc.)
+    mapa_anonimizado = {}
+    if col_nome:
+        nomes_unicos = df[col_nome].dropna().unique()
+        for idx, nome_real in enumerate(nomes_unicos, start=1):
+            mapa_anonimizado[str(nome_real).strip()] = f"Atleta {idx:02d}"
+
+    # Normalização de Distância (KM -> Metros)
     if col_dist_m:
         df['parsed_dist_m'] = df[col_dist_m].fillna(0.0)
     elif col_dist_km:
@@ -61,7 +68,9 @@ def processar_csv_upload(contents: bytes) -> dict:
 
     try:
         for _, row in df.iterrows():
-            nome_atleta = str(row[col_nome]).strip() if col_nome and pd.notna(row[col_nome]) else "Atleta Desconhecido"
+            nome_bruto = str(row[col_nome]).strip() if col_nome and pd.notna(row[col_nome]) else "Atleta Desconhecido"
+            nome_atleta = mapa_anonimizado.get(nome_bruto, "Atleta Desconhecido")
+
             data_sessao = str(row[col_data]).strip() if col_data and pd.notna(row[col_data]) else "2025-07-16"
 
             raw_md = str(row[col_md]).strip().upper() if col_md and pd.notna(row[col_md]) else "TREINO GPS"
