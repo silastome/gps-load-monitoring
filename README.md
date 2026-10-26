@@ -1,40 +1,24 @@
-# ⚽ GPS Load Monitoring App
+# GPS Load Monitoring Web Application
 
-Aplicação web desenvolvida em FastAPI e SQLite para ingestão, processamento e visualização de dados de carga interna/externa de atletas recolhidos via GPS.
+Aplicação web modular para ingestão, análise e monitorização de carga física de atletas a partir de ficheiros GPS, desenvolvida no âmbito da **UFCD 5425 — Projeto de Tecnologias e Programação de Sistemas de Informação** (IEFP).
 
-> Nota: Projeto desenvolvido no âmbito do módulo UFCD 5425 (IEFP).
+## 🚀 Tecnologias Utilizadas
+- **Linguagem:** Python 3.10+
+- **Framework Web:** FastAPI + Uvicorn
+- **Base de Dados:** SQLite3 (Modelo Relacional 3FN)
+- **Processamento de Dados:** Pandas
+- **Frontend:** Jinja2, Tailwind CSS, Chart.js
 
----
+## 📐 Arquitetura da Aplicação (3 Camadas)
+- `web/`: Rotas HTTP FastAPI e renderização Jinja2/Tailwind.
+- `services/`: Ingestão CSV, validação estrita (RN03) e cálculo de métricas (`upload_service.py`).
+- `repositories/`: Camada de persistência e acesso à base de dados SQLite.
 
-## 🚀 Funcionalidades
+## 🛠️ Como Executar Localmente
+1. `git clone https://github.com/silastome/gps-load-monitoring.git`
+2. `cd gps-load-monitoring`
+3. `pip install fastapi uvicorn pandas jinja2 python-multipart`
+4. `PYTHONPATH=. python3 -m uvicorn web.app:app --reload --port 8000`
 
-- Ingestão de Dados: Upload e parsing automático de ficheiros CSV de sessões de treino.
-- Base de Dados Relacional: Persistência de atletas, sessões e registos em SQLite.
-- Dashboard Interativo: Interface em Jinja2, Tailwind CSS e Chart.js.
-- Arquitetura em Camadas: Organização separando Repositories, Services e Web App.
-
----
-
-## 🛠️ Tecnologias Utilizadas
-
-- Backend: Python 3, FastAPI, Uvicorn
-- Base de Dados: SQLite3
-- Manipulação de Dados: Pandas
-- Frontend: Jinja2 Templates, Tailwind CSS, JavaScript
-
----
-
-## ⚙️ Como Executar Localmente
-
-1. Clonar o repositório:
-   git clone https://github.com/silastome/gps-load-monitoring.git
-   cd gps-load-monitoring
-
-2. Instalar dependências:
-   pip install fastapi uvicorn pandas jinja2 python-multipart
-
-3. Iniciar a aplicação:
-   PYTHONPATH=. python3 -m uvicorn web.app:app --port 8000
-
-4. Aceder no navegador:
-   http://127.0.0.1:8000
+## 📜 Licença e Contexto
+Projeto desenvolvido por **Silas Tomé** sob orientação do Formador **Rúben Ferreira** para a UFCD 5425 (IEFP Faro).
