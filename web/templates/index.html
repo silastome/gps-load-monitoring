@@ -3,68 +3,151 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UFCD 5425 - Monitorização de Carga GPS (IEFP)</title>
+    <title>UFCD 5425 - Dashboard de Carga GPS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            body { padding: 0; background-color: white; }
+            .print-full { width: 100% !important; max-width: none !important; }
+        }
+    </style>
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans p-6">
-    <div class="max-w-6xl mx-auto space-y-6">
+<body class="bg-gray-100 min-h-screen p-6 font-sans">
+    <div class="max-w-7xl mx-auto space-y-6 print-full">
         
-        <!-- Cabeçalho -->
-        <header class="bg-blue-900 text-white p-6 rounded-lg shadow-md flex justify-between items-center">
+        <!-- Header -->
+        <div class="bg-indigo-900 text-white rounded-xl p-6 shadow-md flex justify-between items-center">
             <div>
                 <h1 class="text-2xl font-bold">UFCD 5425 — Sistema de Carga GPS</h1>
-                <p class="text-blue-200 text-sm">Projeto Final IEFP (FastAPI + SQLite)</p>
+                <p class="text-indigo-200 text-sm">Dashboard de Monitorização e Análise Desportiva</p>
             </div>
-            <div class="text-right">
-                <span class="bg-blue-700 text-xs px-3 py-1 rounded-full uppercase font-semibold">Servidor Ativo</span>
-            </div>
-        </header>
-
-        <!-- Resumo da Base de Dados -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="bg-white p-5 rounded-lg shadow border-l-4 border-blue-500">
-                <p class="text-xs font-bold text-gray-500 uppercase">Total Registos na BD</p>
-                <p class="text-3xl font-extrabold text-gray-800">{{ resumo.total_registos }}</p>
-            </div>
-            <div class="bg-white p-5 rounded-lg shadow border-l-4 border-green-500">
-                <p class="text-xs font-bold text-gray-500 uppercase">Atletas Registados</p>
-                <p class="text-3xl font-extrabold text-gray-800">{{ resumo.total_jogadores }}</p>
-            </div>
-            <div class="bg-white p-5 rounded-lg shadow border-l-4 border-purple-500">
-                <p class="text-xs font-bold text-gray-500 uppercase">Sessões Monitorizadas</p>
-                <p class="text-3xl font-extrabold text-gray-800">{{ resumo.total_sessoes }}</p>
+            <div class="flex items-center space-x-3 no-print">
+                <button onclick="window.print()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3.5 py-2 rounded-lg transition font-semibold flex items-center gap-1">
+                    🖨️ Exportar PDF
+                </button>
+                <form action="/reset" method="POST" onsubmit="return confirm('Tem a certeza que deseja limpar toda a base de dados?');">
+                    <button type="submit" class="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-2 rounded-lg transition font-semibold">
+                        Limpar BD
+                    </button>
+                </form>
             </div>
         </div>
 
-        <!-- Formulário de Upload -->
-        <div class="bg-white p-6 rounded-lg shadow">
-            <h2 class="text-lg font-bold mb-3 text-gray-700">Importar Novo CSV para a Base de Dados</h2>
-            <form id="uploadForm" class="flex items-center space-x-4">
-                <input type="file" id="csvFile" accept=".csv" class="border border-gray-300 p-2 rounded w-full max-w-md text-sm">
-                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded text-sm transition">
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div class="bg-white rounded-xl p-4 shadow-sm border-l-4 border-blue-500">
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">Total Registos</p>
+                <h3 class="text-2xl font-extrabold text-gray-800 mt-1">{{ totais.total_registos }}</h3>
+            </div>
+            <div class="bg-white rounded-xl p-4 shadow-sm border-l-4 border-emerald-500">
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">Atletas</p>
+                <h3 class="text-2xl font-extrabold text-gray-800 mt-1">{{ totais.total_jogadores }}</h3>
+            </div>
+            <div class="bg-white rounded-xl p-4 shadow-sm border-l-4 border-purple-500">
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">Sessões</p>
+                <h3 class="text-2xl font-extrabold text-gray-800 mt-1">{{ totais.total_sessoes }}</h3>
+            </div>
+            <div class="bg-white rounded-xl p-4 shadow-sm border-l-4 border-amber-500">
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">IETJ Médio</p>
+                <h3 class="text-2xl font-extrabold text-gray-800 mt-1">{{ totais.avg_ietj }}%</h3>
+            </div>
+            <div class="bg-white rounded-xl p-4 shadow-sm border-l-4 border-rose-500 col-span-2 md:col-span-1">
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">RSEI Médio</p>
+                <h3 class="text-2xl font-extrabold text-gray-800 mt-1">{{ totais.avg_rsei }}</h3>
+            </div>
+        </div>
+
+        <!-- 4 Gráficos Chart.js -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+                <h3 class="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wider">1. Acumulado de Player Load por Atleta</h3>
+                <div class="relative h-64">
+                    <canvas id="chartPlayerLoad"></canvas>
+                </div>
+            </div>
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+                <h3 class="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wider">2. Média de Distância Percorrida (m)</h3>
+                <div class="relative h-64">
+                    <canvas id="chartDistancia"></canvas>
+                </div>
+            </div>
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+                <h3 class="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wider">3. Índice de Esforço de Treino/Jogo (IETJ %)</h3>
+                <div class="relative h-64">
+                    <canvas id="chartIETJ"></canvas>
+                </div>
+            </div>
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+                <h3 class="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wider">4. Eficiência Neuromuscular (RSEI)</h3>
+                <div class="relative h-64">
+                    <canvas id="chartRSEI"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Import Form -->
+        <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 no-print">
+            <h2 class="text-md font-bold text-gray-800 mb-3">Importar Ficheiro CSV de GPS</h2>
+            <form action="/upload" method="POST" enctype="multipart/form-data" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                <input type="file" name="file" accept=".csv" required class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-gray-300 rounded-lg">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg transition shadow-sm whitespace-nowrap">
                     Carregar Ficheiro
                 </button>
             </form>
-            <div id="uploadStatus" class="mt-3 text-sm font-semibold"></div>
+
+            {% if erro %}
+            <div class="mt-4 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg">
+                <p class="text-sm font-semibold text-red-800">Erro no Processamento:</p>
+                <p class="text-sm text-red-700 mt-1">{{ erro }}</p>
+            </div>
+            {% endif %}
+
+            {% if resumo %}
+            <div class="mt-4 p-4 bg-emerald-50 border-l-4 border-emerald-500 rounded-r-lg space-y-2">
+                <p class="text-sm font-bold text-emerald-800">Ficheiro Processado com Sucesso!</p>
+                <div class="text-xs text-emerald-700 grid grid-cols-1 sm:grid-cols-3 gap-2 font-medium">
+                    <span>✅ Novos Registos: <strong>{{ resumo.novos_registos }}</strong></span>
+                    <span>✔️ Linhas Aceites: <strong>{{ resumo.linhas_aceites }}</strong></span>
+                    <span>⚠️ Linhas Rejeitadas: <strong>{{ resumo.linhas_rejeitadas }}</strong></span>
+                </div>
+                {% if resumo.erros %}
+                <div class="mt-2 pt-2 border-t border-emerald-200">
+                    <p class="text-xs font-semibold text-amber-800">Detalhes de Rejeição:</p>
+                    <ul class="list-disc list-inside text-xs text-amber-700 mt-1 max-h-32 overflow-y-auto space-y-1">
+                        {% for err in resumo.erros %}
+                        <li>{{ err }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
         </div>
 
-        <!-- Lista de Jogadores na BD -->
-        <div class="bg-white p-6 rounded-lg shadow">
-            <h2 class="text-lg font-bold mb-3 text-gray-700">Atletas Ingeridos na BD</h2>
+        <!-- Tabela Atletas -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="p-4 border-b border-gray-200 bg-gray-50">
+                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wider">Atletas Ingeridos na Base de Dados</h2>
+            </div>
             <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm">
-                    <thead class="bg-gray-100 uppercase text-xs text-gray-600">
-                        <tr>
-                            <th class="p-3">ID</th>
-                            <th class="p-3">Nome do Atleta</th>
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-100 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            <th class="py-2.5 px-6">ID</th>
+                            <th class="py-2.5 px-6">Código Anónimo do Atleta</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="divide-y divide-gray-100 text-sm text-gray-700">
                         {% for j in jogadores %}
-                        <tr class="border-b">
-                            <td class="p-3 font-mono text-gray-500">{{ j.id }}</td>
-                            <td class="p-3 font-medium">{{ j.nome }}</td>
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="py-2.5 px-6 font-mono text-gray-500">{{ j.id }}</td>
+                            <td class="py-2.5 px-6 font-semibold text-gray-800">{{ j.nome }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="2" class="py-6 text-center text-gray-400 italic">Nenhum atleta registado na base de dados.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -74,40 +157,75 @@
 
     </div>
 
+    <!-- Inicialização dos 4 Gráficos Chart.js -->
     <script>
-        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const fileInput = document.getElementById('csvFile');
-            const statusDiv = document.getElementById('uploadStatus');
+        const graficosData = {{ graficos_json | safe }};
 
-            if (!fileInput.files[0]) {
-                statusDiv.className = 'mt-3 text-sm text-red-600';
-                statusDiv.innerText = 'Selecione um ficheiro CSV primeiro.';
-                return;
-            }
+        if (graficosData && graficosData.labels.length > 0) {
+            // Chart 1: Player Load
+            new Chart(document.getElementById('chartPlayerLoad'), {
+                type: 'bar',
+                data: {
+                    labels: graficosData.labels,
+                    datasets: [{
+                        label: 'Player Load Acumulado',
+                        data: graficosData.player_load,
+                        backgroundColor: 'rgba(59, 130, 246, 0.85)',
+                        borderRadius: 6
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
 
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
+            // Chart 2: Distância
+            new Chart(document.getElementById('chartDistancia'), {
+                type: 'bar',
+                data: {
+                    labels: graficosData.labels,
+                    datasets: [{
+                        label: 'Distância Média (m)',
+                        data: graficosData.distancia,
+                        backgroundColor: 'rgba(16, 185, 129, 0.85)',
+                        borderRadius: 6
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
 
-            statusDiv.className = 'mt-3 text-sm text-blue-600';
-            statusDiv.innerText = 'A guardar na base de dados...';
+            // Chart 3: IETJ
+            new Chart(document.getElementById('chartIETJ'), {
+                type: 'line',
+                data: {
+                    labels: graficosData.labels,
+                    datasets: [{
+                        label: 'IETJ Média (%)',
+                        data: graficosData.ietj,
+                        borderColor: 'rgba(245, 158, 11, 1)',
+                        backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
 
-            try {
-                const res = await fetch('/upload', { method: 'POST', body: formData });
-                const data = await res.json();
-                if (res.ok) {
-                    statusDiv.className = 'mt-3 text-sm text-green-600';
-                    statusDiv.innerText = 'Dados importados com sucesso!';
-                    setTimeout(() => window.location.reload(), 1000);
-                } else {
-                    statusDiv.className = 'mt-3 text-sm text-red-600';
-                    statusDiv.innerText = `Erro: ${data.detail}`;
-                }
-            } catch (err) {
-                statusDiv.className = 'mt-3 text-sm text-red-600';
-                statusDiv.innerText = 'Erro na ligação ao servidor.';
-            }
-        });
+            // Chart 4: RSEI
+            new Chart(document.getElementById('chartRSEI'), {
+                type: 'line',
+                data: {
+                    labels: graficosData.labels,
+                    datasets: [{
+                        label: 'RSEI Médio',
+                        data: graficosData.rsei,
+                        borderColor: 'rgba(244, 63, 94, 1)',
+                        backgroundColor: 'rgba(244, 63, 94, 0.15)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
     </script>
 </body>
 </html>

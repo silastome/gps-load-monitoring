@@ -1,24 +1,36 @@
-# GPS Load Monitoring Web Application
+# Sistema de Monitorização e Análise de Carga GPS de Atletas
 
-Aplicação web modular para ingestão, análise e monitorização de carga física de atletas a partir de ficheiros GPS, desenvolvida no âmbito da **UFCD 5425 — Projeto de Tecnologias e Programação de Sistemas de Informação** (IEFP).
+Aplicação web desenvolvida no âmbito da **UFCD 5425 - Projeto de Tecnologias e Programação de Sistemas de Informação** (IEFP).
 
-## 🚀 Tecnologias Utilizadas
-- **Linguagem:** Python 3.10+
-- **Framework Web:** FastAPI + Uvicorn
-- **Base de Dados:** SQLite3 (Modelo Relacional 3FN)
-- **Processamento de Dados:** Pandas
-- **Frontend:** Jinja2, Tailwind CSS, Chart.js
+## 🚀 Funcionalidades Principais
 
-## 📐 Arquitetura da Aplicação (3 Camadas)
-- `web/`: Rotas HTTP FastAPI e renderização Jinja2/Tailwind.
-- `services/`: Ingestão CSV, validação estrita (RN03) e cálculo de métricas (`upload_service.py`).
-- `repositories/`: Camada de persistência e acesso à base de dados SQLite.
+- **Ingestão e Validação Universal de CSV:** Suporte a ficheiros exportados por sistemas GPS (STATSports Apex, Catapult, Wimu, Oliver, etc.).
+- **Filtragem Inteligente de Sub-Splits:** Extração automática de sessões globais (`split_name == 'all'`), evitando duplicação de dados.
+- **Anonimização de Atletas:** Mapeamento automático de nomes para identificadores anónimos (`A01`, `A02`, `A03`...) em conformidade com o RGPD.
+- **Dashboard Operacional Multidimensionais (Navegação por Abas):**
+  - **📍 Sessão GPS:** Rankings ordenados de Distância, Player Load, Velocidade Máxima, Intensidade (m/min) e Perfil Mecânico.
+  - **📊 Matriz & Perfis de Carga:** Quadrantes de Volume vs. Intensidade e Perfil Neuromuscular (km/h vs. m/s²).
+  - **👥 Comparador de Atletas:** Gráfico Radar/Teia e barras de desvio relativo (100% = Média da Equipa) para análise entre atletas ou contra a mediana do plantel.
+  - **📋 Tabela de Registos:** Matriz com valores numéricos individuais exatos.
 
-## 🛠️ Como Executar Localmente
-1. `git clone https://github.com/silastome/gps-load-monitoring.git`
-2. `cd gps-load-monitoring`
-3. `pip install fastapi uvicorn pandas jinja2 python-multipart`
-4. `PYTHONPATH=. python3 -m uvicorn web.app:app --reload --port 8000`
+## 🛠️ Tecnologias Utilizadas
 
-## 📜 Licença e Contexto
-Projeto desenvolvido por **Silas Tomé** sob orientação do Formador **Rúben Ferreira** para a UFCD 5425 (IEFP Faro).
+- **Backend:** Python 3.7+, FastAPI, Uvicorn
+- **Processamento de Dados:** Pandas, NumPy
+- **Visualização de Dados:** Plotly JavaScript
+- **Frontend / Interface:** HTML5, CSS3 (Dark Theme), Jinja2 Templates
+- **Base de Dados:** SQLite (`app.db`)
+
+## 💻 Como Executar
+
+1. Instalar as dependências:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. Iniciar o servidor web:
+   ```bash
+   python main.py
+   ```
+
+3. Aceder no navegador a `http://127.0.0.1:8000`.

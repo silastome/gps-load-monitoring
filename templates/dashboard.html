@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Monitorização de Carga GPS</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f172a; color: #e2e8f0; margin: 0; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #334155; padding-bottom: 15px; margin-bottom: 20px; }
+        .header h1 { margin: 0; color: #f8fafc; font-size: 24px; }
+        .header p { margin: 5px 0 0 0; color: #94a3b8; font-size: 14px; }
+        .btn-upload { background-color: #0072B2; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .card { background-color: #1e293b; padding: 15px 20px; border-radius: 8px; border: 1px solid #334155; }
+        .card .title { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+        .card .value { font-size: 20px; font-weight: bold; color: #38bdf8; margin-top: 5px; }
+
+        .tabs-bar { display: flex; gap: 10px; border-bottom: 2px solid #334155; margin-bottom: 25px; }
+        .tab-btn { background-color: #1e293b; color: #94a3b8; border: 1px solid #334155; border-bottom: none; padding: 12px 20px; border-top-left-radius: 8px; border-top-right-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; }
+        .tab-btn.active { background-color: #0072B2; color: white; border-color: #0072B2; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; }
+        .chart-box { background-color: #1e293b; padding: 15px; border-radius: 8px; border: 1px solid #334155; }
+        .table-box { background-color: #1e293b; padding: 20px; border-radius: 8px; border: 1px solid #334155; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #334155; }
+        th { background-color: #0f172a; color: #38bdf8; font-size: 12px; text-transform: uppercase; }
+        tr:hover { background-color: #334155; }
+        select { background-color: #1e293b; color: white; border: 1px solid #334155; padding: 8px; border-radius: 6px; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div>
+            <h1>Sistema de Monitorização de Carga GPS</h1>
+            <p>Painel Operacional de Análise de Desempenho e Performance da Equipa</p>
+        </div>
+        
+        <div style="display: flex; gap: 15px; align-items: center;">
+            {% if meta.datas_disponiveis %}
+            <form action="/dashboard" method="get">
+                <select name="data_sessao" onchange="this.form.submit()">
+                    <option value="">Todas as Sessões</option>
+                    {% for d in meta.datas_disponiveis %}
+                    <option value="{{ d }}" {% if meta.sessao_ativa == d %}selected{% endif %}>Sessão de {{ d }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+            {% endif %}
+
+            <form action="/upload" method="post" enctype="multipart/form-data" style="display: flex; gap: 10px;">
+                <input type="file" name="file" accept=".csv" required style="color: #94a3b8; font-size: 12px;">
+                <button type="submit" class="btn-upload">Carregar CSV</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="cards-grid">
+        <div class="card"><div class="title">Atletas Ativos</div><div class="value">{{ meta.n_atletas }}</div></div>
+        <div class="card"><div class="title">Distância Média</div><div class="value">{{ meta.dist_media }} m</div></div>
+        <div class="card"><div class="title">Player Load Médio</div><div class="value">{{ meta.pl_medio }}</div></div>
+        <div class="card"><div class="title">Vmáx Pico</div><div class="value">{{ meta.vmax_pico }} km/h</div></div>
+        <div class="card"><div class="title">Duração Média</div><div class="value">{{ meta.dur_media }} min</div></div>
+    </div>
+
+    <!-- ABAS -->
+    <div class="tabs-bar">
+        <button class="tab-btn active" onclick="switchTab('tab1')">📍 Sessão GPS</button>
+        <button class="tab-btn" onclick="switchTab('tab2')">📊 Matriz & Perfis de Carga</button>
+        <button class="tab-btn" onclick="switchTab('tab3')">👥 Comparador de Atletas</button>
+        <button class="tab-btn" onclick="switchTab('tab4')">📋 Tabela de Registos</button>
+    </div>
+
+    <!-- ABA 1: SESSÃO GPS BRUTO -->
+    <div id="tab1" class="tab-content active">
+        <div class="charts-grid">
+            <div class="chart-box"><div id="fig_dist"></div></div>
+            <div class="chart-box"><div id="fig_pl"></div></div>
+            <div class="chart-box"><div id="fig_vmax"></div></div>
+            <div class="chart-box"><div id="fig_int"></div></div>
+            <div class="chart-box" style="grid-column: span 2;"><div id="fig_mec"></div></div>
+        </div>
+    </div>
+
+    <!-- ABA 2: MATRIZ & PERFIS DE CARGA -->
+    <div id="tab2" class="tab-content">
+        <div class="charts-grid">
+            <div class="chart-box"><div id="fig_quad"></div></div>
+            <div class="chart-box"><div id="fig_vel_acc"></div></div>
+        </div>
+    </div>
+
+    <!-- ABA 3: COMPARADOR DE ATLETAS -->
+    <div id="tab3" class="tab-content">
+        <div class="table-box" style="margin-bottom: 20px;">
+            <form action="/dashboard" method="get" style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+                <div>
+                    <label style="font-weight: bold; color: #38bdf8; margin-right: 8px;">Atleta 1:</label>
+                    <select name="p1" onchange="this.form.submit()">
+                        {% for a in meta.atletas_disponiveis %}
+                        <option value="{{ a }}" {% if meta.p1 == a %}selected{% endif %}>Atleta {{ a }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label style="font-weight: bold; color: #f59e0b; margin-right: 8px;">Atleta 2 / Referência:</label>
+                    <select name="p2" onchange="this.form.submit()">
+                        <option value="Mediana da Equipa" {% if meta.p2 == 'Mediana da Equipa' %}selected{% endif %}>Mediana da Equipa</option>
+                        {% for a in meta.atletas_disponiveis %}
+                        <option value="{{ a }}" {% if meta.p2 == a %}selected{% endif %}>Atleta {{ a }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </form>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-box"><div id="fig_radar"></div></div>
+            <div class="chart-box"><div id="fig_norm_bar"></div></div>
+        </div>
+    </div>
+
+    <!-- ABA 4: TABELA DE REGISTOS -->
+    <div id="tab4" class="tab-content">
+        <div class="table-box">
+            <h3 style="margin-top: 0; color: #f8fafc;">Valores Individuais Recolhidos pelo GPS</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Atleta</th>
+                        <th>Duração (min)</th>
+                        <th>Distância (m)</th>
+                        <th>Player Load</th>
+                        <th>V. Máxima (km/h)</th>
+                        <th>Intensidade (m/min)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in tabela_registos %}
+                    <tr>
+                        <td style="font-weight: bold; color: #38bdf8;">{{ row.player_name }}</td>
+                        <td>{{ row.duration_min }}</td>
+                        <td>{{ row.distance_m }}</td>
+                        <td>{{ row.player_load }}</td>
+                        <td>{{ row.top_speed_kmh }}</td>
+                        <td>{{ row.distance_per_min }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            event.currentTarget.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+
+            window.dispatchEvent(new Event('resize'));
+        }
+
+        const figDist = {{ fig_dist_json | safe }};
+        const figPl = {{ fig_pl_json | safe }};
+        const figVmax = {{ fig_vmax_json | safe }};
+        const figInt = {{ fig_int_json | safe }};
+        const figMec = {{ fig_mec_json | safe }};
+        const figQuad = {{ fig_quad_json | safe }};
+        const figVelAcc = {{ fig_vel_acc_json | safe }};
+        const figRadar = {{ fig_radar_json | safe }};
+        const figNormBar = {{ fig_norm_bar_json | safe }};
+
+        Plotly.newPlot('fig_dist', figDist.data, figDist.layout, {responsive: true});
+        Plotly.newPlot('fig_pl', figPl.data, figPl.layout, {responsive: true});
+        Plotly.newPlot('fig_vmax', figVmax.data, figVmax.layout, {responsive: true});
+        Plotly.newPlot('fig_int', figInt.data, figInt.layout, {responsive: true});
+        Plotly.newPlot('fig_mec', figMec.data, figMec.layout, {responsive: true});
+
+        Plotly.newPlot('fig_quad', figQuad.data, figQuad.layout, {responsive: true});
+        Plotly.newPlot('fig_vel_acc', figVelAcc.data, figVelAcc.layout, {responsive: true});
+
+        Plotly.newPlot('fig_radar', figRadar.data, figRadar.layout, {responsive: true});
+        Plotly.newPlot('fig_norm_bar', figNormBar.data, figNormBar.layout, {responsive: true});
+    </script>
+
+</body>
+</html>

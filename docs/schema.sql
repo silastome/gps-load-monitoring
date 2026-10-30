@@ -3,13 +3,15 @@
 CREATE TABLE IF NOT EXISTS jogadores (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nome TEXT UNIQUE NOT NULL,
+    nome_real TEXT UNIQUE,
     posicao TEXT
 );
 
 CREATE TABLE IF NOT EXISTS sessoes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     data TEXT NOT NULL,
-    tipo TEXT
+    tipo TEXT NOT NULL,
+    UNIQUE(data, tipo)
 );
 
 CREATE TABLE IF NOT EXISTS registos (
@@ -28,5 +30,6 @@ CREATE TABLE IF NOT EXISTS registos (
     ietj REAL,
     rsei REAL,
     FOREIGN KEY(jogador_id) REFERENCES jogadores(id),
-    FOREIGN KEY(sessao_id) REFERENCES sessoes(id)
+    FOREIGN KEY(sessao_id) REFERENCES sessoes(id),
+    UNIQUE(jogador_id, sessao_id)
 );
