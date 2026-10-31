@@ -1,0 +1,213 @@
+================================================================================
+DIAGNÓSTICO COMPLETO DO REPOSITÓRIO: gps-load-monitoring
+Caminho Absoluto: /Users/Silas/Desktop/IEFP/gps-load-monitoring
+================================================================================
+
+1. ESTRUTURA DE FICHEIROS E PASTAS
+------------------------------------------------------------
+📁 gps-load-monitoring/
+  📄 dados_base.csv
+  📄 main.py
+  📄 preparar_dados.py
+  📄 README.md
+  📄 requirements.txt
+  📁 dashboard/
+    📄 __init__.py
+    📄 graficos.py
+    📄 leitura.py
+    📄 metricas.py
+    📄 paleta.py
+  📁 docs/
+    📄 schema.sql
+  📁 outputs/
+    📄 conversao_dash_final.csv
+  📁 repositories/
+    📄 __init__.py
+    📄 diagnostico_repo.py
+    📄 jogadores_repo.py
+    📄 registos_repo.py
+    📄 sessoes_repo.py
+  📁 services/
+    📄 __init__.py
+    📄 gps_processor.py
+    📄 upload_service.py
+  📁 templates/
+    📄 dashboard.html
+    📄 upload.html
+  📁 web/
+    📄 app.py
+    📄 router.py
+    📁 templates/
+      📄 dashboard.html
+      📄 index.html
+      📄 upload.html
+
+2. CABEÇALHOS E AMOSTRAS DE FICHEIROS CSV
+------------------------------------------------------------
+
+--- CSV: dados_base.csv ---
+Colunas (37): ['date', 'player_name', 'duration_secs', 'distance_m', 'player_load', 'top_speed_kmh', 'max_acceleration', 'max_deceleration', 'player_code', 'duration_min', 'distance_per_min', 'pl_per_min', 'microcycle_day', 'week_id', 'iso_tuple', 'ano_iso', 'semana_iso', 'acute', 'chronic', 'acwr', 'acwr_zone', 'percent_vmax', 'rsei_global_old', 'carga_total_semanal', 'monotony_player_load', 'strain_player_load', 'hsr_m', 'sprint_m', 'hsr_per_min', 'sprint_per_min', 'vmax_individual_p95', 'rsei_individual', 'cluster', 'perfil_carga', 'periodo', 'Posicao', 'ietj']
+Amostra das 3 primeiras linhas de dados:
+  Linha 1: ['2025-07-14', 'A01', '6393', '6398.7', '319.8853', '25.2642', '5.3956', '5.8741', 'A01', '106.55', '60.05349601126232', '3.002208352885969', 'Outro/Transição', '2025-07-14', '(2025, 29)', '2025', '29', '319.8853', '319.8853', '1.0', 'Sweet Spot (0.80 - 1.30)', '69.71299906457729', '0.6971299906457729', '319.8853', '1.0', '319.8853', '511.896', '95.9805', '4.804279680900986', '0.9008024401689348', '28.2206', '0.8952396476332891', '3', 'C3: Carga Elevada', '2025-07', 'Plantel Principal', '128.73371245070228']
+  Linha 2: ['2025-08-07', 'A01', '7499', '4795.3', '219.6566', '28.3762', '5.7593', '5.8556', 'A01', '124.98333333333332', '38.36751566875584', '1.7574871316175489', 'MD-2', '2025-08-04', '(2025, 32)', '2025', '32', '294.828125', '312.9729758620689', '0.9420242248964472', 'Sweet Spot (0.80 - 1.30)', '78.30012444709344', '0.7830012444709343', '219.6566', '1.0', '219.6566', '383.624', '71.9295', '3.069401253500467', '0.5755127350313376', '28.2206', '1.0055137027561427', '2', 'C2: Carga Moderada', '2025-08', 'Plantel Principal', '82.24654778837758']
+  Linha 3: ['2025-07-09', 'A02', '6034', '6742.5', '339.7384', '30.8002', '6.9738', '6.5556', 'A02', '100.56666666666666', '67.04507789194564', '3.3782406363937687', 'MD-2', '2025-07-07', '(2025, 28)', '2025', '28', '339.7384', '339.7384', '1.0', 'Sweet Spot (0.80 - 1.30)', '84.9888107990276', '0.849888107990276', '690.8953', '1.0', '690.8953', '539.4', '101.1375', '5.363606231355651', '1.0056761683791846', '33.1467', '0.9292086391707168', '3', 'C3: Carga Elevada', '2025-07', 'Plantel Principal', '143.72122110856017']
+
+--- CSV: outputs/conversao_dash_final.csv ---
+Colunas (105): ['date', 'microcycle_day', 'player_name', 'split_name', 'Tags', 'Split Start Time', 'Split End Time', 'duration', 'distance', 'Sprint Distance (m)', 'Power Plays', 'Energy (kcal)', 'Impacts', 'Hr Load', 'Time In Red Zone (min)', 'player_load', 'top_speed_kmh', 'Distance Per Min (m/min)', 'Power Score (w/kg)', 'Work Ratio', 'Hr Max (bpm)', 'max_deceleration', 'max_acceleration', 'Distance in Speed Zone 1  (km)', 'Distance in Speed Zone 2  (km)', 'Distance in Speed Zone 3  (km)', 'Distance in Speed Zone 4  (km)', 'Distance in Speed Zone 5  (km)', 'Time in Speed Zone 1 (secs)', 'Time in Speed Zone 2 (secs)', 'Time in Speed Zone 3 (secs)', 'Time in Speed Zone 4 (secs)', 'Time in Speed Zone 5 (secs)', 'Impact Zones: 3 - 5 G (Impacts)', 'Impact Zones: 5 - 10 G (Impacts)', 'Impact Zones: 10 - 15 G (Impacts)', 'Impact Zones: 15 - 20 G (Impacts)', 'Impact Zones: > 20 G (Impacts)', 'Power Play Duration Zones: 0 - 2.5 s (Power Plays)', 'Power Play Duration Zones: 2.5 - 5 s (Power Plays)', 'Power Play Duration Zones: 5 - 7.5 s (Power Plays)', 'Power Play Duration Zones: 7.5 - 10 s (Power Plays)', 'Power Play Duration Zones: > 10 s (Power Plays)', 'Distance in Deceleration Zones: 0 - 1 m/s/s  (km)', 'Distance in Deceleration Zones: 1 - 2 m/s/s  (km)', 'Distance in Deceleration Zones: 2 - 3 m/s/s  (km)', 'Distance in Deceleration Zones: 3 - 4 m/s/s  (km)', 'Distance in Deceleration Zones: > 4 m/s/s  (km)', 'Time in Deceleration Zones: 0 - 1 m/s/s (secs)', 'Time in Deceleration Zones: 1 - 2 m/s/s (secs)', 'Time in Deceleration Zones: 2 - 3 m/s/s (secs)', 'Time in Deceleration Zones: 3 - 4 m/s/s (secs)', 'Time in Deceleration Zones: > 4 m/s/s (secs)', 'Distance in Acceleration Zones: 0 - 1 m/s/s  (km)', 'Distance in Acceleration Zones: 1 - 2 m/s/s  (km)', 'Distance in Acceleration Zones: 2 - 3 m/s/s  (km)', 'Distance in Acceleration Zones: 3 - 4 m/s/s  (km)', 'Distance in Acceleration Zones: > 4 m/s/s  (km)', 'Time in Acceleration Zones: 0 - 1 m/s/s (secs)', 'Time in Acceleration Zones: 1 - 2 m/s/s (secs)', 'Time in Acceleration Zones: 2 - 3 m/s/s (secs)', 'Time in Acceleration Zones: 3 - 4 m/s/s (secs)', 'Time in Acceleration Zones: > 4 m/s/s (secs)', 'Distance in Power Zone: 0 - 5 w/kg  (km)', 'Distance in Power Zone: 5 - 10 w/kg  (km)', 'Distance in Power Zone: 10 - 15 w/kg  (km)', 'Distance in Power Zone: 15 - 20 w/kg  (km)', 'Distance in Power Zone: 20 - 25 w/kg  (km)', 'Distance in Power Zone: 25 - 30 w/kg  (km)', 'Distance in Power Zone: 30 - 35 w/kg  (km)', 'Distance in Power Zone: 35 - 40 w/kg  (km)', 'Distance in Power Zone: 40 - 45 w/kg  (km)', 'Distance in Power Zone: 45 - 50 w/kg  (km)', 'Distance in Power Zone: > 50 w/kg  (km)', 'Time in Power Zone: 0 - 5 w/kg (secs)', 'Time in Power Zone: 5 - 10 w/kg (secs)', 'Time in Power Zone: 10 - 15 w/kg (secs)', 'Time in Power Zone: 15 - 20 w/kg (secs)', 'Time in Power Zone: 20 - 25 w/kg (secs)', 'Time in Power Zone: 25 - 30 w/kg (secs)', 'Time in Power Zone: 30 - 35 w/kg (secs)', 'Time in Power Zone: 35 - 40 w/kg (secs)', 'Time in Power Zone: 40 - 45 w/kg (secs)', 'Time in Power Zone: 45 - 50 w/kg (secs)', 'Time in Power Zone: > 50 w/kg (secs)', 'Time in HR Load Zone 0% - 60% Max HR(secs)', 'Time in HR Load Zone 60% - 75% Max HR (secs)', 'Time in HR Load Zone 75% - 85% Max HR (secs)', 'Time in HR Load Zone 85% - 96% Max HR (secs)', 'Time in HR Load Zone 96% - 100% Max HR (secs)', 'Accelerations Zone Count: 0 - 1 m/s/s', 'Accelerations Zone Count: 1 - 2 m/s/s', 'Accelerations Zone Count: 2 - 3 m/s/s', 'Accelerations Zone Count: 3 - 4 m/s/s', 'Accelerations Zone Count: > 4 m/s/s', 'Deceleration Zone Count: 0 - 1 m/s/s', 'Deceleration Zone Count: 1 - 2 m/s/s', 'Deceleration Zone Count: 2 - 3 m/s/s', 'Deceleration Zone Count: 3 - 4 m/s/s', 'Deceleration Zone Count: > 4 m/s/s', 'distance_m', 'duration_secs', 'duration_min', 'distance_per_min', 'pl_per_min']
+Amostra das 3 primeiras linhas de dados:
+  Linha 1: ['2025-07-23', 'July 23 2025', 'A01', 'all', ' training', '45861.368791667', '45861.516136574', '12731', '5.2939', '988.323', '42', '655.3002', '3', '0', '0', '248.3555', '29.3282', '24.9495', '2.0512', '9.0695', '0', '6.6021', '5.9778', '0.819', '2.4324', '1.0542', '0.855', '0.1333', '10860.0', '1433.1', '274.9', '144.4', '18.2', '96', '3', '0', '0', '0', '0', '15', '15', '3', '9', '2.0767', '0.4039', '0.177', '0.0646', '0.0305', '1917.7', '165.5', '54.6', '17.7', '7.6', '1.8915', '0.454', '0.1422', '0.0432', '0.0102', '10305.0', '180.5', '57.1', '19.1', '5.8', '1.3271', '1.2087', '0.7931', '0.4687', '0.413', '0.4308', '0.2667', '0.1146', '0.0901', '0.0526', '0.1286', '11292.1', '695.8', '299.3', '133.2', '94.0', '82.4', '51.1', '23.6', '19.0', '11.1', '29.0', '12730.6', '0', '0', '0', '0', '0', '85', '72', '41', '24', '0', '89', '70', '30', '22', '5293.9', '12731', '212.18333333333334', '24.949650459508284', '1.1704760034561308']
+  Linha 2: ['2025-07-23', 'July 23 2025', 'A02', 'all', ' training', '45861.371862269', '45861.515309028', '12394', '5.4854', '709.457', '33', '652.2517', '0', '0', '0', '230.7332', '28.6082', '26.5553', '2.0971', '10.4303', '0', '4.6186', '6.6756', '0.7021', '3.0041', '1.0698', '0.5506', '0.1589', '10229.8', '1768.4', '281.5', '92.4', '21.6', '18', '0', '0', '0', '0', '0', '19', '7', '0', '7', '2.2546', '0.4839', '0.1367', '0.0186', '0.0014', '1969.4', '185.8', '46.2', '5.9', '0.4', '2.0553', '0.3738', '0.1225', '0.0273', '0.0114', '9956.4', '162.5', '48.4', '12.5', '6.2', '1.2217', '1.6778', '0.9311', '0.5012', '0.3219', '0.3333', '0.2003', '0.1099', '0.0602', '0.0383', '0.0896', '10665.0', '1000.8', '343.0', '143.0', '75.5', '65.0', '36.9', '22.6', '12.2', '8.3', '21.4', '12393.8', '0', '0', '0', '0', '0', '84', '72', '29', '20', '0', '96', '75', '22', '3', '5485.400000000001', '12394', '206.56666666666666', '26.555107309988706', '1.1169914474745846']
+  Linha 3: ['2025-07-23', 'July 23 2025', 'A03', 'all', ' training', '45861.41600463', '45861.51597338', '8637', '4.9495', '865.195', '45', '629.2955', '4', '0', '0', '241.479', '31.2482', '34.3833', '2.9033', '12.5608', '11', '7.9593', '6.7289', '0.6962', '2.3937', '0.9944', '0.6929', '0.1723', '6776.5', '1458.5', '262.0', '117.2', '23.0', '225', '4', '0', '0', '0', '0', '29', '8', '1', '7', '1.9275', '0.4311', '0.159', '0.0673', '0.0443', '1782.7', '161.1', '50.2', '18.7', '11.3', '1.6767', '0.4114', '0.1559', '0.0569', '0.0195', '6355.8', '167.6', '58.3', '22.3', '9.2', '1.211', '1.2704', '0.6886', '0.4677', '0.3526', '0.3269', '0.2079', '0.1033', '0.0777', '0.0433', '0.2001', '7210.5', '762.8', '256.8', '135.2', '81.4', '62.2', '39.6', '20.4', '16.2', '9.4', '42.7', '8637.3', '0', '0', '0', '0', '0', '74', '76', '46', '32', '0', '76', '76', '25', '29', '4949.5', '8637', '143.95', '34.38346648141716', '1.677519972212574']
+
+3. ESTRUTURA DE SCRIPTS PYTHON (.py)
+------------------------------------------------------------
+
+--- Python: main.py ---
+Total de linhas: 14
+Primeiras 15 linhas:
+  import uvicorn
+  from fastapi import FastAPI
+  from web.router import router
+  
+  app = FastAPI(
+      title="Sistema de Monitorização de Carga GPS",
+      description="Projeto de Tecnologias e Programação de Sistemas de Informação (UFCD 5425)",
+      version="1.0.0"
+  )
+  
+  app.include_router(router)
+  
+  if __name__ == "__main__":
+      uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+
+--- Python: preparar_dados.py ---
+Total de linhas: 34
+Primeiras 15 linhas:
+  import os
+  import json
+  import pandas as pd
+  
+  df = pd.read_csv('dados_base.csv')
+  df['date'] = pd.to_datetime(df['date'])
+  
+  os.makedirs('outputs', exist_ok=True)
+  os.makedirs('cache', exist_ok=True)
+  
+  df.to_csv('outputs/conversao_dash_final.csv', index=False)
+  df.to_csv('cache/player_master_v3.csv.gz', index=False, compression='gzip')
+  df.to_csv('cache/clusters_sessoes.csv', index=False)
+  
+  if 'ietj' in df.columns:
+
+--- Python: dashboard/__init__.py ---
+Total de linhas: 0
+Primeiras 15 linhas:
+
+--- Python: dashboard/graficos.py ---
+Total de linhas: 259
+Principais Definições / Variáveis / Funções:
+  def _layout_base():
+  def fig_ranking_bar(df, col, title, x_label, unit="", color="#0072B2"):
+  def fig_perfil_mecanico(df):
+  def fig_quadrantes_volume_intensidade(df):
+  def fig_vel_vs_acc(df):
+  def fig_radar_comparison(df, p1="A01", p2="A02"):
+  def fig_normalized_bar_comparison(df, p1="A01", p2="A02"):
+
+--- Python: dashboard/leitura.py ---
+Total de linhas: 90
+Principais Definições / Variáveis / Funções:
+  BASE_DIR  = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+  def _sha256_curto(caminho, n_bytes=8):
+  def carregar_dashboard():
+  def carregar_mapa_anonimizacao():
+  def carregar_ietj_por_fase():
+  def carregar_ietj_faixas():
+  def carregar_posthoc():
+  def carregar_rmcorr():
+
+--- Python: dashboard/metricas.py ---
+Total de linhas: 38
+Principais Definições / Variáveis / Funções:
+  def distribuicao_fases(df):
+  def distribuicao_acwr(df):
+  def resumo_foster(df):
+
+--- Python: dashboard/paleta.py ---
+Total de linhas: 40
+Primeiras 15 linhas:
+  OKABE_ITO = {
+      "blue":      "#0072B2",
+      "orange":    "#E69F00",
+      "green":     "#009E73",
+      "red":       "#D55E00",
+      "purple":    "#CC79A7",
+      "yellow":    "#F0E442",
+      "skyblue":   "#56B4E9",
+      "black":     "#000000",
+      "gray":      "#999999",
+      "darkblue":  "#003366",
+      "white":     "#FFFFFF",
+      "lightgray": "#F5F5F5",
+  }
+  
+
+--- Python: repositories/__init__.py ---
+Total de linhas: 10
+Principais Definições / Variáveis / Funções:
+  def get_db_connection(db_path=None):
+
+--- Python: repositories/jogadores_repo.py ---
+Total de linhas: 20
+Principais Definições / Variáveis / Funções:
+  def obter_ou_criar_jogador(cursor, nome_atleta_real):
+  def listar_jogadores(conn):
+
+--- Python: repositories/registos_repo.py ---
+Total de linhas: 94
+Principais Definições / Variáveis / Funções:
+  def registo_existe(cursor, jogador_id, sessao_id):
+  def inserir_registo(cursor, dados):
+  def limpar_base_dados(conn):
+  def obter_totais_dashboard(conn):
+  def obter_dados_graficos(conn):
+
+--- Python: repositories/sessoes_repo.py ---
+Total de linhas: 8
+Principais Definições / Variáveis / Funções:
+  def obter_ou_criar_sessao(cursor, data_sessao, tipo_sessao="Treino Principal"):
+
+--- Python: services/__init__.py ---
+Total de linhas: 0
+Primeiras 15 linhas:
+
+--- Python: services/gps_processor.py ---
+Total de linhas: 106
+Principais Definições / Variáveis / Funções:
+  MAPA_COLUNAS_POSSIVEIS = {
+  def clean_col(name):
+  def parse_data_robusta(series):
+  def parse_val(v):
+  def anonimizar_atletas(series: pd.Series) -> pd.Series:
+  def mapear_colunas(df: pd.DataFrame) -> pd.DataFrame:
+  def calcular_metricas_completas(df: pd.DataFrame) -> pd.DataFrame:
+
+--- Python: services/upload_service.py ---
+Total de linhas: 117
+Principais Definições / Variáveis / Funções:
+  def processar_csv_upload(conteudo_bytes: bytes, db_path=None):
+  def safe_float(val):
+
+--- Python: web/app.py ---
+Total de linhas: 75
+Principais Definições / Variáveis / Funções:
+  def startup():
+  def dashboard(request: Request):
+  def reset_db():
+
+--- Python: web/router.py ---
+Total de linhas: 144
+Principais Definições / Variáveis / Funções:
+  BASE_DIR = Path(__file__).resolve().parent.parent
+  def upload_page(request: Request):
+  def dashboard_page(

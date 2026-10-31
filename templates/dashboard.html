@@ -3,193 +3,424 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Monitorização de Carga GPS</title>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f172a; color: #e2e8f0; margin: 0; padding: 20px; }
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #334155; padding-bottom: 15px; margin-bottom: 20px; }
-        .header h1 { margin: 0; color: #f8fafc; font-size: 24px; }
-        .header p { margin: 5px 0 0 0; color: #94a3b8; font-size: 14px; }
-        .btn-upload { background-color: #0072B2; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        
-        .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .card { background-color: #1e293b; padding: 15px 20px; border-radius: 8px; border: 1px solid #334155; }
-        .card .title { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
-        .card .value { font-size: 20px; font-weight: bold; color: #38bdf8; margin-top: 5px; }
+    <title>Sistema de Monitorização de Carga GPS - Relatório</title>
 
-        .tabs-bar { display: flex; gap: 10px; border-bottom: 2px solid #334155; margin-bottom: 25px; }
-        .tab-btn { background-color: #1e293b; color: #94a3b8; border: 1px solid #334155; border-bottom: none; padding: 12px 20px; border-top-left-radius: 8px; border-top-right-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; }
-        .tab-btn.active { background-color: #0072B2; color: white; border-color: #0072B2; }
+    <!-- Plotly.js CDN -->
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-panel: #1e293b;
+            --bg-card: #334155;
+            --text-main: #e2e8f0;
+            --text-dim: #94a3b8;
+            --accent-blue: #0072B2;
+            --accent-orange: #E69F00;
+            --accent-green: #009E73;
+            --accent-red: #D55E00;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-dark); color: var(--text-main); padding: 20px; }
+
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        h1 { font-size: 1.5rem; font-weight: 700; color: #ffffff; }
+        p.subtitle { font-size: 0.85rem; color: var(--text-dim); }
+
+        .top-controls { display: flex; gap: 10px; align-items: center; }
+        select, input, .btn { padding: 8px 14px; background: var(--bg-panel); border: 1px solid var(--bg-card); color: white; border-radius: 6px; font-size: 0.85rem; cursor: pointer; }
+        .btn-primary { background: var(--accent-blue); border: none; font-weight: 600; }
+        .btn-warning { background: var(--accent-orange); border: none; font-weight: 600; color: #000; }
+
+        /* KPI Cards Grid */
+        .kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-bottom: 20px; }
+        .kpi-card { background: var(--bg-panel); padding: 15px; border-radius: 8px; border-left: 4px solid var(--accent-blue); }
+        .kpi-card span { font-size: 0.75rem; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.5px; }
+        .kpi-card h2 { font-size: 1.4rem; margin-top: 5px; color: #fff; }
+
+        /* Insights e Ficha de Atleta */
+        .insights-section { display: grid; grid-template-columns: 2fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .box-panel { background: var(--bg-panel); padding: 18px; border-radius: 8px; border: 1px solid var(--bg-card); }
+        .box-panel h3 { font-size: 1rem; color: var(--accent-orange); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+        .insights-list { list-style: none; }
+        .insights-list li { font-size: 0.85rem; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+
+        .ficha-atleta h3 { color: var(--accent-blue); }
+        .ficha-metricas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .ficha-item { background: var(--bg-dark); padding: 8px; border-radius: 6px; text-align: center; }
+        .ficha-item small { font-size: 0.7rem; color: var(--text-dim); }
+        .ficha-item p { font-size: 1rem; font-weight: 600; margin-top: 2px; }
+
+        /* Navegação por Abas */
+        .tabs { display: flex; gap: 10px; border-bottom: 2px solid var(--bg-card); margin-bottom: 20px; }
+        .tab-btn { padding: 10px 20px; background: none; border: none; color: var(--text-dim); font-size: 0.9rem; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; }
+        .tab-btn.active { color: var(--accent-blue); border-bottom-color: var(--accent-blue); }
+
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
-        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; }
-        .chart-box { background-color: #1e293b; padding: 15px; border-radius: 8px; border: 1px solid #334155; }
-        .table-box { background-color: #1e293b; padding: 20px; border-radius: 8px; border: 1px solid #334155; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #334155; }
-        th { background-color: #0f172a; color: #38bdf8; font-size: 12px; text-transform: uppercase; }
-        tr:hover { background-color: #334155; }
-        select { background-color: #1e293b; color: white; border: 1px solid #334155; padding: 8px; border-radius: 6px; font-size: 14px; }
+        /* Gráficos Grid */
+        .chart-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .chart-grid-4 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .chart-box { background: var(--bg-panel); border-radius: 8px; padding: 10px; min-height: 380px; }
+
+        /* Tabela */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: var(--bg-panel); border-radius: 8px; overflow: hidden; }
+        th, td { padding: 12px 15px; text-align: left; font-size: 0.85rem; border-bottom: 1px solid var(--bg-card); }
+        th { background: var(--bg-card); color: #fff; text-transform: uppercase; font-size: 0.75rem; }
+
+        /* ==========================================================================
+           REGRAS DE IMPRESSÃO / EXPORTAÇÃO PDF (MODO ALTO CONTRASRASTE A4)
+           ========================================================================== */
+        @media print {
+            @page {
+                size: A4 landscape;
+                margin: 6mm;
+            }
+
+            html, body {
+                background: #ffffff !important;
+                color: #000000 !important;
+                width: 100% !important;
+                height: auto !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            header, nav, .top-controls, .tabs, form, select, input, button, .no-print {
+                display: none !important;
+            }
+
+            .tab-content {
+                display: block !important;
+                visibility: visible !important;
+                page-break-after: always !important;
+            }
+
+            .tab-content:last-child {
+                page-break-after: auto !important;
+            }
+
+            .kpi-grid {
+                display: grid !important;
+                grid-template-columns: repeat(5, 1fr) !important;
+                gap: 8px !important;
+                margin-bottom: 12px !important;
+            }
+
+            .kpi-card, .box-panel, .ficha-item {
+                background: #ffffff !important;
+                border: 1px solid #000000 !important;
+                color: #000000 !important;
+                box-shadow: none !important;
+            }
+
+            .kpi-card h2, .kpi-card span, .box-panel h3, .ficha-item p, .ficha-item small, .insights-list li {
+                color: #000000 !important;
+            }
+
+            .chart-box, .plot-container, .svg-container, .js-plotly-plot {
+                max-height: 290px !important;
+                height: 290px !important;
+                width: 100% !important;
+                page-break-inside: avoid !important;
+                overflow: hidden !important;
+                background: #ffffff !important;
+                border: 1px solid #cccccc !important;
+            }
+
+            .gtitle, .xtitle, .ytitle, .ticktext {
+                fill: #000000 !important;
+                color: #000000 !important;
+            }
+
+            .tabela-container table {
+                font-size: 0.75rem !important;
+                color: #000000 !important;
+                border: 1px solid #000000 !important;
+            }
+            .tabela-container th, .tabela-container td {
+                color: #000000 !important;
+                border: 1px solid #cccccc !important;
+            }
+            .tabela-container th {
+                background: #e2e8f0 !important;
+            }
+        }
     </style>
 </head>
 <body>
 
-    <div class="header">
+    <!-- Header -->
+    <header>
         <div>
             <h1>Sistema de Monitorização de Carga GPS</h1>
-            <p>Painel Operacional de Análise de Desempenho e Performance da Equipa</p>
+            <p class="subtitle">Painel Operacional de Análise de Desempenho e Performance da Equipa</p>
         </div>
-        
-        <div style="display: flex; gap: 15px; align-items: center;">
-            {% if meta.datas_disponiveis %}
-            <form action="/dashboard" method="get">
+        <div class="top-controls">
+            <button class="btn btn-warning" onclick="prepararEImprimirPDF()">📄 Exportar PDF Completo</button>
+            <form action="/dashboard" method="get" style="display: flex; gap: 10px;">
+                <input type="hidden" name="aba_ativa" class="aba_ativa_input" value="{{ meta.aba_ativa }}">
                 <select name="data_sessao" onchange="this.form.submit()">
                     <option value="">Todas as Sessões</option>
                     {% for d in meta.datas_disponiveis %}
-                    <option value="{{ d }}" {% if meta.sessao_ativa == d %}selected{% endif %}>Sessão de {{ d }}</option>
+                    <option value="{{ d }}" {% if d == meta.sessao_ativa %}selected{% endif %}>Sessão: {{ d }}</option>
                     {% endfor %}
                 </select>
             </form>
-            {% endif %}
-
-            <form action="/upload" method="post" enctype="multipart/form-data" style="display: flex; gap: 10px;">
-                <input type="file" name="file" accept=".csv" required style="color: #94a3b8; font-size: 12px;">
-                <button type="submit" class="btn-upload">Carregar CSV</button>
+            <form action="/upload" method="post" enctype="multipart/form-data" style="display: flex; gap: 5px;">
+                <input type="file" name="file" accept=".csv" required style="width: 180px;">
+                <button type="submit" class="btn btn-primary">Carregar CSV</button>
             </form>
         </div>
-    </div>
+    </header>
 
-    <div class="cards-grid">
-        <div class="card"><div class="title">Atletas Ativos</div><div class="value">{{ meta.n_atletas }}</div></div>
-        <div class="card"><div class="title">Distância Média</div><div class="value">{{ meta.dist_media }} m</div></div>
-        <div class="card"><div class="title">Player Load Médio</div><div class="value">{{ meta.pl_medio }}</div></div>
-        <div class="card"><div class="title">Vmáx Pico</div><div class="value">{{ meta.vmax_pico }} km/h</div></div>
-        <div class="card"><div class="title">Duração Média</div><div class="value">{{ meta.dur_media }} min</div></div>
-    </div>
-
-    <!-- ABAS -->
-    <div class="tabs-bar">
-        <button class="tab-btn active" onclick="switchTab('tab1')">📍 Sessão GPS</button>
-        <button class="tab-btn" onclick="switchTab('tab2')">📊 Matriz & Perfis de Carga</button>
-        <button class="tab-btn" onclick="switchTab('tab3')">👥 Comparador de Atletas</button>
-        <button class="tab-btn" onclick="switchTab('tab4')">📋 Tabela de Registos</button>
-    </div>
-
-    <!-- ABA 1: SESSÃO GPS BRUTO -->
-    <div id="tab1" class="tab-content active">
-        <div class="charts-grid">
-            <div class="chart-box"><div id="fig_dist"></div></div>
-            <div class="chart-box"><div id="fig_pl"></div></div>
-            <div class="chart-box"><div id="fig_vmax"></div></div>
-            <div class="chart-box"><div id="fig_int"></div></div>
-            <div class="chart-box" style="grid-column: span 2;"><div id="fig_mec"></div></div>
+    <!-- KPIs Globais -->
+    <section class="kpi-grid">
+        <div class="kpi-card">
+            <span>Atletas Ativos</span>
+            <h2>{{ meta.n_atletas }}</h2>
         </div>
-    </div>
-
-    <!-- ABA 2: MATRIZ & PERFIS DE CARGA -->
-    <div id="tab2" class="tab-content">
-        <div class="charts-grid">
-            <div class="chart-box"><div id="fig_quad"></div></div>
-            <div class="chart-box"><div id="fig_vel_acc"></div></div>
+        <div class="kpi-card">
+            <span>Distância Média</span>
+            <h2>{{ meta.dist_media }} m</h2>
         </div>
-    </div>
-
-    <!-- ABA 3: COMPARADOR DE ATLETAS -->
-    <div id="tab3" class="tab-content">
-        <div class="table-box" style="margin-bottom: 20px;">
-            <form action="/dashboard" method="get" style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
-                <div>
-                    <label style="font-weight: bold; color: #38bdf8; margin-right: 8px;">Atleta 1:</label>
-                    <select name="p1" onchange="this.form.submit()">
-                        {% for a in meta.atletas_disponiveis %}
-                        <option value="{{ a }}" {% if meta.p1 == a %}selected{% endif %}>Atleta {{ a }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div>
-                    <label style="font-weight: bold; color: #f59e0b; margin-right: 8px;">Atleta 2 / Referência:</label>
-                    <select name="p2" onchange="this.form.submit()">
-                        <option value="Mediana da Equipa" {% if meta.p2 == 'Mediana da Equipa' %}selected{% endif %}>Mediana da Equipa</option>
-                        {% for a in meta.atletas_disponiveis %}
-                        <option value="{{ a }}" {% if meta.p2 == a %}selected{% endif %}>Atleta {{ a }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </form>
+        <div class="kpi-card">
+            <span>Player Load Médio</span>
+            <h2>{{ meta.pl_medio }} U.A.</h2>
         </div>
-
-        <div class="charts-grid">
-            <div class="chart-box"><div id="fig_radar"></div></div>
-            <div class="chart-box"><div id="fig_norm_bar"></div></div>
+        <div class="kpi-card">
+            <span>Vmáx Pico</span>
+            <h2>{{ meta.vmax_pico }} km/h</h2>
         </div>
-    </div>
+        <div class="kpi-card">
+            <span>Duração Média</span>
+            <h2>{{ meta.dur_media }} min</h2>
+        </div>
+    </section>
 
-    <!-- ABA 4: TABELA DE REGISTOS -->
-    <div id="tab4" class="tab-content">
-        <div class="table-box">
-            <h3 style="margin-top: 0; color: #f8fafc;">Valores Individuais Recolhidos pelo GPS</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Atleta</th>
-                        <th>Duração (min)</th>
-                        <th>Distância (m)</th>
-                        <th>Player Load</th>
-                        <th>V. Máxima (km/h)</th>
-                        <th>Intensidade (m/min)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for row in tabela_registos %}
-                    <tr>
-                        <td style="font-weight: bold; color: #38bdf8;">{{ row.player_name }}</td>
-                        <td>{{ row.duration_min }}</td>
-                        <td>{{ row.distance_m }}</td>
-                        <td>{{ row.player_load }}</td>
-                        <td>{{ row.top_speed_kmh }}</td>
-                        <td>{{ row.distance_per_min }}</td>
-                    </tr>
+    <!-- Painel de Insights e Ficha do Atleta -->
+    <section class="insights-section">
+        <div class="box-panel">
+            <h3>💡 Insights Metodológicos da Sessão</h3>
+            <ul class="insights-list">
+                {% if insights %}
+                    {% for item in insights %}
+                    <li>{{ item | safe }}</li>
                     {% endfor %}
-                </tbody>
-            </table>
+                {% else %}
+                    <li>Nenhum alerta crítico detetado para a sessão selecionada.</li>
+                {% endif %}
+            </ul>
+        </div>
+
+        <div class="box-panel ficha-atleta">
+            <h3>👤 Ficha Individual: {{ meta.p1 }}</h3>
+            {% if ficha_atleta %}
+            <div class="ficha-metricas">
+                <div class="ficha-item">
+                    <small>Distância</small>
+                    <p>{{ ficha_atleta.distance_m }} m</p>
+                </div>
+                <div class="ficha-item">
+                    <small>Player Load</small>
+                    <p>{{ ficha_atleta.player_load }}</p>
+                </div>
+                <div class="ficha-item">
+                    <small>Vmáx</small>
+                    <p>{{ ficha_atleta.top_speed_kmh }} km/h</p>
+                </div>
+                <div class="ficha-item">
+                    <small>Z-Score (MBI)</small>
+                    <p>{{ ficha_atleta.z_score_distancia }}</p>
+                </div>
+            </div>
+            {% else %}
+            <p style="font-size: 0.8rem; color: var(--text-dim); margin-top: 10px;">Selecione um atleta para visualizar o resumo MBI.</p>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- Navegação por Abas -->
+    <nav class="tabs">
+        <button class="tab-btn {% if meta.aba_ativa == 'tab1' or not meta.aba_ativa %}active{% endif %}" onclick="switchTab('tab1')">📊 Sessão GPS</button>
+        <button class="tab-btn {% if meta.aba_ativa == 'tab2' %}active{% endif %}" onclick="switchTab('tab2')">📈 Matriz & Perfis da Carga</button>
+        <button class="tab-btn {% if meta.aba_ativa == 'tab3' %}active{% endif %}" onclick="switchTab('tab3')">👥 Comparador de Atletas</button>
+        <button class="tab-btn {% if meta.aba_ativa == 'tab4' %}active{% endif %}" onclick="switchTab('tab4')">📋 Tabela de Registos</button>
+    </nav>
+
+    <!-- ABA 1: Sessão GPS -->
+    <div id="tab1" class="tab-content {% if meta.aba_ativa == 'tab1' or not meta.aba_ativa %}active{% endif %}">
+        <div class="chart-grid-4">
+            <div class="chart-box" id="chart_dist"></div>
+            <div class="chart-box" id="chart_pl"></div>
+            <div class="chart-box" id="chart_vmax"></div>
+            <div class="chart-box" id="chart_int"></div>
+        </div>
+        <div class="chart-box" id="chart_mec" style="margin-top: 20px;"></div>
+    </div>
+
+    <!-- ABA 2: Matriz & Perfis da Carga -->
+    <div id="tab2" class="tab-content {% if meta.aba_ativa == 'tab2' %}active{% endif %}">
+        <div class="chart-grid-2">
+            <div class="chart-box" id="chart_quad"></div>
+            <div class="chart-box" id="chart_vel_acc"></div>
+        </div>
+        <div class="chart-grid-2" style="margin-top: 20px;">
+            <div class="chart-box" id="chart_acwr"></div>
+            <div class="chart-box" id="chart_foster"></div>
+        </div>
+        <div class="chart-box" id="chart_fases" style="margin-top: 20px;"></div>
+    </div>
+
+    <!-- ABA 3: Comparador de Atletas -->
+    <div id="tab3" class="tab-content {% if meta.aba_ativa == 'tab3' %}active{% endif %}">
+        <div class="box-panel no-print" style="margin-bottom: 20px;">
+            <form action="/dashboard" method="get" style="display: flex; gap: 15px; align-items: center;">
+                <input type="hidden" name="aba_ativa" class="aba_ativa_input" value="tab3">
+                {% if meta.sessao_ativa and 'Todas' not in meta.sessao_ativa %}
+                <input type="hidden" name="data_sessao" value="{{ meta.sessao_ativa }}">
+                {% endif %}
+
+                <label style="font-size: 0.85rem;">Atleta 1:</label>
+                <select name="p1" onchange="this.form.submit()">
+                    {% for a in meta.atletas_disponiveis %}
+                    <option value="{{ a }}" {% if a == meta.p1 %}selected{% endif %}>{{ a }}</option>
+                    {% endfor %}
+                </select>
+
+                <label style="font-size: 0.85rem;">Atleta 2 / Referência:</label>
+                <select name="p2" onchange="this.form.submit()">
+                    <option value="Mediana da Equipa" {% if meta.p2 == 'Mediana da Equipa' %}selected{% endif %}>Mediana da Equipa</option>
+                    {% for a in meta.atletas_disponiveis %}
+                    <option value="{{ a }}" {% if a == meta.p2 %}selected{% endif %}>{{ a }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+
+        <div class="chart-grid-2">
+            <div class="chart-box" id="chart_radar"></div>
+            <div class="chart-box" id="chart_norm_bar"></div>
         </div>
     </div>
 
-    <script>
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    <!-- ABA 4: Tabela de Registos -->
+    <div id="tab4" class="tab-content {% if meta.aba_ativa == 'tab4' %}active{% endif %} tabela-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Atleta</th>
+                    <th>Duração (min)</th>
+                    <th>Distância (m)</th>
+                    <th>Player Load</th>
+                    <th>V. Máxima (km/h)</th>
+                    <th>Intensidade (m/min)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in tabela_registos %}
+                <tr>
+                    <td><b>{{ r.player_name }}</b></td>
+                    <td>{{ r.duration_min }}</td>
+                    <td>{{ r.distance_m }}</td>
+                    <td>{{ r.player_load }}</td>
+                    <td>{{ r.top_speed_kmh }}</td>
+                    <td>{{ r.distance_per_min }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
-            event.currentTarget.classList.add('active');
-            document.getElementById(tabId).classList.add('active');
+    <!-- DATA SCRIPTS (Injeção de dados sem tags Jinja2 dentro de blocos JS para 0 erros no VS Code) -->
+    <script id="data_fig_dist" type="application/json">{{ fig_dist_json | safe }}</script>
+    <script id="data_fig_pl" type="application/json">{{ fig_pl_json | safe }}</script>
+    <script id="data_fig_vmax" type="application/json">{{ fig_vmax_json | safe }}</script>
+    <script id="data_fig_int" type="application/json">{{ fig_int_json | safe }}</script>
+    <script id="data_fig_mec" type="application/json">{{ fig_mec_json | safe }}</script>
+
+    <script id="data_fig_quad" type="application/json">{{ fig_quad_json | safe }}</script>
+    <script id="data_fig_vel_acc" type="application/json">{{ fig_vel_acc_json | safe }}</script>
+    <script id="data_fig_acwr" type="application/json">{{ fig_acwr_json | safe }}</script>
+    <script id="data_fig_fases" type="application/json">{{ fig_fases_json | safe }}</script>
+    <script id="data_fig_foster" type="application/json">{{ fig_foster_json | safe }}</script>
+
+    <script id="data_fig_radar" type="application/json">{{ fig_radar_json | safe }}</script>
+    <script id="data_fig_norm_bar" type="application/json">{{ fig_norm_bar_json | safe }}</script>
+
+    <!-- Script de Renderização e Exportação -->
+    <script>
+        function readJson(id) {
+            const el = document.getElementById(id);
+            return el ? JSON.parse(el.textContent) : { data: [], layout: {} };
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            const targetContent = document.getElementById(tabId);
+            if (targetContent) targetContent.classList.add('active');
+
+            document.querySelectorAll('.aba_ativa_input').forEach(input => input.value = tabId);
 
             window.dispatchEvent(new Event('resize'));
         }
 
-        const figDist = {{ fig_dist_json | safe }};
-        const figPl = {{ fig_pl_json | safe }};
-        const figVmax = {{ fig_vmax_json | safe }};
-        const figInt = {{ fig_int_json | safe }};
-        const figMec = {{ fig_mec_json | safe }};
-        const figQuad = {{ fig_quad_json | safe }};
-        const figVelAcc = {{ fig_vel_acc_json | safe }};
-        const figRadar = {{ fig_radar_json | safe }};
-        const figNormBar = {{ fig_norm_bar_json | safe }};
+        function prepararEImprimirPDF() {
+            // Ajustar layouts dos gráficos para modo de alto contraste de impressão
+            const updatePrintLayout = {
+                paper_bgcolor: '#ffffff',
+                plot_bgcolor: '#ffffff',
+                font: { color: '#000000' }
+            };
 
-        Plotly.newPlot('fig_dist', figDist.data, figDist.layout, {responsive: true});
-        Plotly.newPlot('fig_pl', figPl.data, figPl.layout, {responsive: true});
-        Plotly.newPlot('fig_vmax', figVmax.data, figVmax.layout, {responsive: true});
-        Plotly.newPlot('fig_int', figInt.data, figInt.layout, {responsive: true});
-        Plotly.newPlot('fig_mec', figMec.data, figMec.layout, {responsive: true});
+            document.querySelectorAll('.js-plotly-plot').forEach(el => {
+                Plotly.relayout(el, updatePrintLayout);
+                Plotly.Plots.resize(el);
+            });
 
-        Plotly.newPlot('fig_quad', figQuad.data, figQuad.layout, {responsive: true});
-        Plotly.newPlot('fig_vel_acc', figVelAcc.data, figVelAcc.layout, {responsive: true});
+            setTimeout(() => {
+                window.print();
+            }, 300);
+        }
 
-        Plotly.newPlot('fig_radar', figRadar.data, figRadar.layout, {responsive: true});
-        Plotly.newPlot('fig_norm_bar', figNormBar.data, figNormBar.layout, {responsive: true});
+        const config = { responsive: true, displayModeBar: false };
+
+        // Renderizar Aba 1
+        const figDist = readJson('data_fig_dist');
+        const figPl = readJson('data_fig_pl');
+        const figVmax = readJson('data_fig_vmax');
+        const figInt = readJson('data_fig_int');
+        const figMec = readJson('data_fig_mec');
+
+        Plotly.newPlot('chart_dist', figDist.data, figDist.layout, config);
+        Plotly.newPlot('chart_pl', figPl.data, figPl.layout, config);
+        Plotly.newPlot('chart_vmax', figVmax.data, figVmax.layout, config);
+        Plotly.newPlot('chart_int', figInt.data, figInt.layout, config);
+        Plotly.newPlot('chart_mec', figMec.data, figMec.layout, config);
+
+        // Renderizar Aba 2
+        const figQuad = readJson('data_fig_quad');
+        const figVelAcc = readJson('data_fig_vel_acc');
+        const figAcwr = readJson('data_fig_acwr');
+        const figFases = readJson('data_fig_fases');
+        const figFoster = readJson('data_fig_foster');
+
+        Plotly.newPlot('chart_quad', figQuad.data, figQuad.layout, config);
+        Plotly.newPlot('chart_vel_acc', figVelAcc.data, figVelAcc.layout, config);
+        Plotly.newPlot('chart_acwr', figAcwr.data, figAcwr.layout, config);
+        Plotly.newPlot('chart_fases', figFases.data, figFases.layout, config);
+        Plotly.newPlot('chart_foster', figFoster.data, figFoster.layout, config);
+
+        // Renderizar Aba 3
+        const figRadar = readJson('data_fig_radar');
+        const figNormBar = readJson('data_fig_norm_bar');
+
+        Plotly.newPlot('chart_radar', figRadar.data, figRadar.layout, config);
+        Plotly.newPlot('chart_norm_bar', figNormBar.data, figNormBar.layout, config);
     </script>
-
 </body>
 </html>

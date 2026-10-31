@@ -1,75 +1,46 @@
+"""
+===============================================================================
+APLICAÇÃO PRINCIPAL FASTAPI E INICIALIZAÇÃO DE INFRAESTRUTURA
+===============================================================================
+Descrição: Instancia a aplicação FastAPI, inicializa o esquema da base de dados
+           SQLite no arranque (schema.sql) e inclui o router de rotas web.
+===============================================================================
+"""
+
 import os
-import json
-from fastapi import FastAPI, UploadFile, File, Request
-from fastapi.templating import Jinja2Templates
-from fastapi.responses import RedirectResponse
-
+from pathlib import Path
+from fastapi import FastAPI
 from repositories import get_db_connection
-from repositories.jogadores_repo import listar_jogadores
-from repositories.registos_repo import obter_totais_dashboard, obter_dados_graficos, limpar_base_dados
-from services.upload_service import processar_csv_upload
+from web.router import router
 
-app = FastAPI(title="GPS Load Monitoring")
+BASE_DIR = Path(__file__).resolve().parent.parent
 
-base_dir = os.path.dirname(__file__)
-template_dir = os.path.join(base_dir, "templates")
-templates = Jinja2Templates(directory=template_dir)
 
-@app.on_event("startup")
-def startup():
-    conn = get_db_connection()
-    schema_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "docs", "schema.sql")
-    if os.path.exists(schema_path):
-        with open(schema_path, "r", encoding="utf-8") as f:
-            conn.executescript(f.read())
-    conn.close()
+def create_app() -> FastAPI:
+    """Fábrica de criação e configuração da aplicação FastAPI."""
+    app = FastAPI(
+        title="Sistema de Monitorização de Carga GPS",
+        description="Plataforma Universal e Agnostic White-Label para Monitorização de Carga GPS no Futebol",
+        version="1.0.0"
+    )
 
-@app.get("/")
-def dashboard(request: Request):
-    conn = get_db_connection()
-    totais = obter_totais_dashboard(conn)
-    jogadores = listar_jogadores(conn)
-    graficos = obter_dados_graficos(conn)
-    conn.close()
-    
-    return templates.TemplateResponse("index.html", {
-        "request": request,
-        "totais": totais,
-        "jogadores": jogadores,
-        "graficos_json": json.dumps(graficos),
-        "resumo": None,
-        "erro": None
-    })
+    @app.on_event("startup")
+    def startup_event():
+        """Verifica e executa o schema.sql para garantir a estrutura do SQLite."""
+        try:
+            conn = get_db_connection()
+            schema_path = BASE_DIR / "docs" / "schema.sql"
+            if schema_path.exists():
+                with open(schema_path, "r", encoding="utf-8") as f:
+                    conn.executescript(f.read())
+            conn.close()
+        except Exception as e:
+            print(f"Aviso no arranque da base de dados: {e}")
 
-@app.post("/upload")
-async def upload_csv(request: Request, file: UploadFile = File(...)):
-    conteudo = await file.read()
-    resumo = None
-    mensagem_erro = None
-    
-    try:
-        resumo = processar_csv_upload(conteudo)
-    except Exception as e:
-        mensagem_erro = str(e)
+    # Inclusão do router centralizado de rotas
+    app.include_router(router)
 
-    conn = get_db_connection()
-    totais = obter_totais_dashboard(conn)
-    jogadores = listar_jogadores(conn)
-    graficos = obter_dados_graficos(conn)
-    conn.close()
+    return app
 
-    return templates.TemplateResponse("index.html", {
-        "request": request,
-        "totais": totais,
-        "jogadores": jogadores,
-        "graficos_json": json.dumps(graficos),
-        "resumo": resumo,
-        "erro": mensagem_erro
-    })
 
-@app.post("/reset")
-def reset_db():
-    conn = get_db_connection()
-    limpar_base_dados(conn)
-    conn.close()
-    return RedirectResponse(url="/", status_code=303)
+app = create_app()

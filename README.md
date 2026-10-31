@@ -1,36 +1,56 @@
-# Sistema de Monitorização e Análise de Carga GPS de Atletas
+# Sistema de Monitorização de Carga GPS (`gps-load-monitoring`)
 
-Aplicação web desenvolvida no âmbito da **UFCD 5425 - Projeto de Tecnologias e Programação de Sistemas de Informação** (IEFP).
+Plataforma *white-label* e agnóstica para ingestão de dados brutos de GPS desportivo (STATSports, Catapult One, GPExe, Wimu, Oliver, FieldWiz), normalização de métricas e visualização operacional de carga interna e externa.
 
-## 🚀 Funcionalidades Principais
+---
 
-- **Ingestão e Validação Universal de CSV:** Suporte a ficheiros exportados por sistemas GPS (STATSports Apex, Catapult, Wimu, Oliver, etc.).
-- **Filtragem Inteligente de Sub-Splits:** Extração automática de sessões globais (`split_name == 'all'`), evitando duplicação de dados.
-- **Anonimização de Atletas:** Mapeamento automático de nomes para identificadores anónimos (`A01`, `A02`, `A03`...) em conformidade com o RGPD.
-- **Dashboard Operacional Multidimensionais (Navegação por Abas):**
-  - **📍 Sessão GPS:** Rankings ordenados de Distância, Player Load, Velocidade Máxima, Intensidade (m/min) e Perfil Mecânico.
-  - **📊 Matriz & Perfis de Carga:** Quadrantes de Volume vs. Intensidade e Perfil Neuromuscular (km/h vs. m/s²).
-  - **👥 Comparador de Atletas:** Gráfico Radar/Teia e barras de desvio relativo (100% = Média da Equipa) para análise entre atletas ou contra a mediana do plantel.
-  - **📋 Tabela de Registos:** Matriz com valores numéricos individuais exatos.
+## 🛠️ Arquitetura do Sistema
 
-## 🛠️ Tecnologias Utilizadas
+* **Backend:** FastAPI (Python 3.7+)
+* **Processamento de Dados:** Pandas & NumPy
+* **Visualização Interativa:** Plotly.js
+* **Persistência de Dados:** SQLite (`app.db`) com repositórios dedicados
+* **Interface Web:** Templates Jinja2 + CSS Flexbox/Grid responsivo com tema escuro
 
-- **Backend:** Python 3.7+, FastAPI, Uvicorn
-- **Processamento de Dados:** Pandas, NumPy
-- **Visualização de Dados:** Plotly JavaScript
-- **Frontend / Interface:** HTML5, CSS3 (Dark Theme), Jinja2 Templates
-- **Base de Dados:** SQLite (`app.db`)
+---
 
-## 💻 Como Executar
+## 📊 Principais Funcionalidades
 
-1. Instalar as dependências:
+1. **Ingestão Universal & Normalização:**
+   * Reconhecimento automático de sinonímia de cabeçalhos de múltiplos fornecedores.
+   * Conversão automática de unidades (m/min, PL/min, velocidade em km/h).
+   * Mapeamento e anonimização 1:1 de atletas (`A01`, `A02`, ...).
+   * Deduplicação rigorosa por data de sessão e atleta.
+
+2. **Análise Metodológica & Longitudinal:**
+   * **ACWR (Acute:Chronic Workload Ratio):** Cálculo via EWMA (Exponentially Weighted Moving Average) e Rolling Average.
+   * **Índices de Foster (1998):** Cálculo de Monotonia e Strain em janelas móveis de 7 dias.
+   * **Perfil Neuromuscular & Mecânico:** Relações Vmáx vs Aceleração e Aceleração vs Desaceleração.
+   * **Estatística Individual:** Cálculo de Z-Score / MBI (Magnitude-Based Inference) por atleta.
+
+3. **Dashboard Interativo Multi-Aba:**
+   * **Aba 1 (Sessão GPS):** Ranking da equipa, perfis mecânicos e picos de intensidade.
+   * **Aba 2 (Matriz & Perfis de Carga):** Matriz Locomotora, curva temporal de ACWR, distribuição por fase do microciclo e tendência de Foster.
+   * **Aba 3 (Comparador de Atletas):** Gráficos Radar (% do máximo) e desvio relativo em relação à média/mediana do grupo.
+   * **Aba 4 (Tabela de Registos):** Tabela executiva de valores brutos por sessão.
+
+4. **Exportação PDF Executiva:**
+   * Layout de impressão `@media print` otimizado para formato **A4 Landscape**.
+   * Redimensionamento automático dos gráficos SVG Plotly para evitar estoiro de páginas.
+
+---
+
+## 🚀 Como Executar a Aplicação
+
+1. **Ativar o ambiente e instalar dependências:**
    ```bash
-   pip install -r requirements.txt
-   ```
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install uvicorn fastapi pandas plotly jinja2 python-multipart
 
 2. Iniciar o servidor web:
    ```bash
-   python main.py
+   python3 main.py
    ```
 
 3. Aceder no navegador a `http://127.0.0.1:8000`.
