@@ -10,7 +10,27 @@ Plataforma *white-label* e agnóstica para ingestão de dados brutos de GPS desp
 * **Processamento de Dados:** Pandas & NumPy
 * **Visualização Interativa:** Plotly.js
 * **Persistência de Dados:** SQLite (`app.db`) com repositórios dedicados
+* **Testes Automatizados:** `pytest`
 * **Interface Web:** Templates Jinja2 + CSS Flexbox/Grid responsivo com tema escuro
+
+---
+
+## 📋 Formato CSV Suportado & Regras de Ingestão
+
+O pipeline de ingestão aceita ficheiros CSV de dispositivos GPS com suporte aos seguintes campos principais:
+
+### Colunas Obrigatórias
+- `date`: Data da sessão de treino/jogo (Formato `AAAA-MM-DD`).
+- `player_name`: Identificador/nome do atleta.
+- `distance_m`: Distância total percorrida em metros (valor não-negativo).
+- `duration_min`: Duração total da sessão em minutos (valor não-negativo).
+- `player_load`: Carga do atleta (valor não-negativo).
+- `top_speed_kmh`: Velocidade máxima atingida em km/h (valor não-negativo).
+
+### Regras de Validação (Fail-Fast & Integridade)
+1. **Validação Rigorosa Pre-Ingestão (Fail-Fast):** Se qualquer linha do ficheiro contiver colunas obrigatórias ausentes, datas inválidas, nomes de atleta nulos ou métricas físicas negativas, o ficheiro é rejeitado na totalidade com uma mensagem clara de erro, garantindo zero gravações parciais.
+2. **Prevenção de Duplicação:** Registos do mesmo atleta na mesma sessão são detetados e ignorados para evitar duplicados na base de dados.
+3. **Transação Atómica:** A persistência em SQLite utiliza transações isoladas que efetuam *rollback* automático em caso de falha durante a gravação.
 
 ---
 
