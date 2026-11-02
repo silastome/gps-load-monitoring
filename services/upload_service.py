@@ -41,33 +41,102 @@ def processar_csv_upload(
     """
     Processa o ficheiro CSV em bytes enviado via formulário/API.
     
-    Parameters:
-        conteudo_bytes: Conteúdo binário do ficheiro CSV.
-        db_path: Caminho para a base de dados SQLite (opcional).
-        anonimizar: Se True, anonimiza os nomes dos atletas durante a ingestão.
-        
     Returns:
-        dict: Resumo com estatísticas do processamento (aceites, rejeitados, erros).
+        dict: Resumo padronizado (sucesso, mensagem, novos_registos, linhas_aceites, linhas_rejeitadas, erros).
     """
-    # 1. Leitura inicial do CSV bruto
+    # 1. Leitura inicial do CSV bruto (sem raise descontrolado)
     try:
         df_raw = pd.read_csv(io.BytesIO(conteudo_bytes))
     except Exception as e:
-        raise ValueError(f"Não foi possível ler o ficheiro CSV enviado: {str(e)}")
+        return {
+            "sucesso": False,
+            "mensagem": f"Não foi possível ler o ficheiro CSV enviado: {str(e)}",
+            "novos_registos": 0,
+            "linhas_aceites": 0,
+            "linhas_rejeitadas": 0,
+            "erros": [str(e)]
+        }
 
     if df_raw.empty:
-        raise ValueError("O ficheiro CSV enviado está vazio.")
+        return {
+            "sucesso": False,
+            "mensagem": "O ficheiro CSV enviado está vazio.",
+            "novos_registos": 0,
+            "linhas_aceites": 0,
+            "linhas_rejeitadas": 0,
+            "erros": ["Ficheiro CSV sem linhas de dados."]
+        }
 
-    # 2. Processamento universal via gps_processor (Mapeamento + Limpeza + Métricas)
+    # 2. Processamento universal via gps_processor
     try:
         df_proc = calcular_metricas_completas(df_raw, anonimizar=anonimizar)
     except Exception as e:
-        raise ValueError(f"Erro ao processar a estrutura do CSV: {str(e)}")
+        return {
+            "sucesso": False,
+            "mensagem": f"Erro ao processar a estrutura do CSV: {str(e)}",
+            "novos_registos": 0,
+            "linhas_aceites": 0,
+            "linhas_rejeitadas": len(df_raw),
+            "erros": [str(e)]
+        }
 
-    # Verificação de colunas obrigatórias resultantes do gps_processor
-    if 'player_name' not in df_proc.columns or df_proc['player_name'].dropna().empty:
-        raise ValueError("Ficheiro CSV inválido: coluna de identificação do atleta não encontrada.")
+    # Verificação estrita de colunas obrigatórias
+    colunas_obrigatorias = ['date', 'player_name', 'distance_m', 'duration_min', 'player_load', 'top_speed_kmh']
+    colunas_faltantes = [c for c in colunas_obrigatorias if c not in df_proc.columns]
 
+    if colunas_faltantes or df_proc['player_name'].dropna().empty:
+        msg_erro = f"Ficheiro CSV inválido: colunas obrigatórias ausentes ({', '.join(colunas_faltantes)})." if colunas_faltantes else "Coluna 'player_name' ausente ou totalmente vazia."
+        return {
+            "sucesso": False,
+            "mensagem": msg_erro,
+            "novos_registos": 0,
+            "linhas_aceites": 0,
+            "linhas_rejeitadas": len(df_raw),
+            "erros": [msg_erro]
+        }
+
+    # 3. FASE DE VALIDAÇÃO PRÉVIA (Fail-Fast: Se houver erros de integridade, rejeita o ficheiro)
+    erros_validacao = []
+    
+    for idx, row in df_proc.iterrows():
+        num_linha = idx + 2
+
+        # Validar Nome
+        val_atleta = row.get("player_name")
+        nome_real = str(val_atleta).strip() if pd.notnull(val_atleta) else ""
+        if not nome_real or nome_real.lower() in ["nan", "none", "n/d", "a00"]:
+            erros_validacao.append(f"Linha {num_linha}: Nome de atleta ausente ou inválido.")
+
+        # Validar Data
+        val_data = row.get("date")
+        data_dt = pd.to_datetime(val_data, errors='coerce') if pd.notnull(val_data) else pd.NaT
+        if pd.isna(data_dt):
+            erros_validacao.append(f"Linha {num_linha}: Data de sessão ausente ou inválida.")
+
+        # Validar Métricas Negativas
+        distancia = safe_float(row.get("distance_m"))
+        duracao = safe_float(row.get("duration_min"))
+        player_load = safe_float(row.get("player_load"))
+        top_speed = safe_float(row.get("top_speed_kmh"))
+        hsr = safe_float(row.get("hsr_m"))
+        sprint = safe_float(row.get("sprint_m"))
+
+        metricas_checagem = [m for m in [distancia, duracao, player_load, top_speed, hsr, sprint] if m is not None]
+        if any(m < 0 for m in metricas_checagem):
+            erros_validacao.append(f"Linha {num_linha}: Métricas físicas com valores negativos para '{nome_real}'.")
+
+    # Se forem detetados erros de validação, aborta sem gravar na BD
+    if erros_validacao:
+        return {
+            "sucesso": False,
+            "mensagem": f"Ficheiro rejeitado: {len(erros_validacao)} erro(s) de validação detetado(s).",
+            "novos_registos": 0,
+            "linhas_aceites": 0,
+            "linhas_rejeitadas": len(df_proc),
+            "erros": erros_validacao
+        }
+
+    # 4. GRAVAÇÃO EM BD (Transação Atómica)
     conn = get_db_connection(db_path)
     cursor = conn.cursor()
 
@@ -79,48 +148,22 @@ def processar_csv_upload(
 
     try:
         for idx, row in df_proc.iterrows():
-            num_linha = idx + 2  # Considera o cabeçalho na linha 1
+            num_linha = idx + 2
 
-            # Validar Atleta
-            val_atleta = row.get("player_name")
-            nome_real = str(val_atleta).strip() if pd.notnull(val_atleta) else ""
-            if not nome_real or nome_real.lower() in ["nan", "none", "n/d", "a00"]:
-                linhas_rejeitadas += 1
-                erros.append(f"Linha {num_linha}: Nome de atleta ausente ou inválido.")
-                continue
-
-            # Validar Data da Sessão
-            val_data = row.get("date")
-            data_dt = pd.to_datetime(val_data, errors='coerce') if pd.notnull(val_data) else pd.NaT
-            if pd.isna(data_dt):
-                linhas_rejeitadas += 1
-                erros.append(f"Linha {num_linha}: Data de sessão ausente ou inválida para '{nome_real}'.")
-                continue
-            
+            nome_real = str(row.get("player_name")).strip()
+            data_dt = pd.to_datetime(row.get("date"))
             data_sessao_str = data_dt.strftime("%Y-%m-%d")
 
-            # Extração de Métricas Físicas e Relativas
             distancia = safe_float(row.get("distance_m"))
             duracao = safe_float(row.get("duration_min"))
             player_load = safe_float(row.get("player_load"))
             top_speed = safe_float(row.get("top_speed_kmh"))
             hsr = safe_float(row.get("hsr_m"))
-            sprint = safe_float(row.get("sprint_m"))
             
-            acc_max = safe_float(row.get("max_acceleration"))
-            dec_max = safe_float(row.get("max_deceleration"))
-
+            # Sem inventar "MD" fictício se o campo estiver ausente
             val_mc = row.get("microcycle_day")
-            microcycle = str(val_mc).strip() if pd.notnull(val_mc) else "MD"
+            microcycle = str(val_mc).strip() if pd.notnull(val_mc) and str(val_mc).strip() != "" else None
 
-            # Verificação de Valores Negativos
-            metricas_checagem = [m for m in [distancia, duracao, player_load, top_speed, hsr, sprint] if m is not None]
-            if any(m < 0 for m in metricas_checagem):
-                linhas_rejeitadas += 1
-                erros.append(f"Linha {num_linha}: Métricas físicas com valores negativos para '{nome_real}'.")
-                continue
-
-            # Cálculos Derivados Automáticos (se não vierem já no CSV)
             dist_per_min = safe_float(row.get("distance_per_min"))
             if dist_per_min is None and distancia is not None and duracao is not None and duracao > 0:
                 dist_per_min = round(distancia / duracao, 2)
@@ -137,11 +180,12 @@ def processar_csv_upload(
             if rsei is None and top_speed is not None and hsr is not None:
                 rsei = round((top_speed * 1.5) + (hsr / 100.0), 2)
 
-            # Persistência Relacional em DB (Atleta -> Sessão -> Registo)
+            # Persistência Relacional
             jogador_id, _ = obter_ou_criar_jogador(cursor, nome_real)
             tipo_sessao = microcycle if microcycle else "Treino Principal"
             sessao_id = obter_ou_criar_sessao(cursor, data_sessao_str, tipo_sessao)
 
+            # Verificação de Duplicação
             if registo_existe(cursor, jogador_id, sessao_id):
                 linhas_rejeitadas += 1
                 erros.append(f"Linha {num_linha}: Registo duplicado para '{nome_real}' na sessão '{data_sessao_str}'.")
@@ -170,7 +214,7 @@ def processar_csv_upload(
 
         conn.commit()
 
-        # 3. Sincronização opcional do CSV unificado em outputs/conversao_dash_final.csv
+        # 5. Sincronização do CSV unificado
         if registos_sincronizacao:
             os.makedirs(OUT_DIR, exist_ok=True)
             csv_final_path = os.path.join(OUT_DIR, "conversao_dash_final.csv")
@@ -189,11 +233,20 @@ def processar_csv_upload(
 
     except Exception as e:
         conn.rollback()
-        raise e
+        return {
+            "sucesso": False,
+            "mensagem": f"Erro interno ao gravar na base de dados: {str(e)}",
+            "novos_registos": 0,
+            "linhas_aceites": 0,
+            "linhas_rejeitadas": len(df_proc),
+            "erros": [str(e)]
+        }
     finally:
         conn.close()
 
     return {
+        "sucesso": True,
+        "mensagem": f"Importação concluída com sucesso. {novos_registos} novos registos importados.",
         "novos_registos": novos_registos,
         "linhas_aceites": linhas_aceites,
         "linhas_rejeitadas": linhas_rejeitadas,

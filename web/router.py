@@ -73,14 +73,13 @@ def dashboard_page(
     if data_sessao is None and datas_disponiveis:
         data_sessao = datas_disponiveis[0]
 
-    # 3. Tratamento das Vistas: Sessão Única (Ponto 2.1) vs Agregação Longitudinal (Ponto 2.2)
+    # 3. Tratamento das Vistas: Sessão Única vs Agregação Longitudinal
     if data_sessao and data_sessao in datas_disponiveis:
-        # Ponto 2.1: Filtra estritamente a data selecionada (1 registo por atleta)
+        # Filtra estritamente a data selecionada (1 registo por atleta)
         df_view = df_full[df_full["date"].dt.strftime("%Y-%m-%d") == data_sessao].copy()
         sessao_ativa = data_sessao
     else:
-        # Ponto 2.2: Vista "Todas as Sessões" -> Agrupa por atleta (Média/Máximo)
-        # Evita a sobreposição de 1.299 pontos/barras e duplicação de atletas
+        # Vista "Todas as Sessões" -> Agrupa por atleta (Média/Máximo)
         sessao_ativa = "Todas as Sessões (Média da Equipa)"
         agg_rules = {}
         for c in ['duration_min', 'distance_m', 'player_load', 'distance_per_min', 'hsr_m', 'sprint_m']:
@@ -138,7 +137,7 @@ def dashboard_page(
         "atletas_disponiveis": atletas_disponiveis
     }
 
-    # 8. Geração de Gráficos (Vistas agregadas vs Séries temporais históricas df_full)
+    # 8. Geração de Gráficos
     f_dist = fig_ranking_bar(df_view, 'distance_m', 'Distância Total por Atleta (m)', 'Distância (m)', 'm', '#0072B2')
     f_pl   = fig_ranking_bar(df_view, 'player_load', 'Player Load por Atleta', 'Player Load (U.A.)', 'U.A.', '#56B4E9')
     f_vmax = fig_ranking_bar(df_view, 'top_speed_kmh', 'Velocidade Máxima (km/h)', 'V. Máxima (km/h)', 'km/h', '#d97706')
@@ -148,7 +147,6 @@ def dashboard_page(
     f_quad    = fig_quadrantes_volume_intensidade(df_view)
     f_vel_acc = fig_vel_vs_acc(df_view)
 
-    # Gráficos de Série Temporal usam o df_full completo com todas as datas
     f_acwr   = fig_acwr_longitudinal(df_full, p1)
     f_fases  = fig_fases_microciclo(df_full)
     f_foster = fig_foster_longitudinal(df_full, p1)
@@ -156,7 +154,7 @@ def dashboard_page(
     f_radar    = fig_radar_comparison(df_view, p1, p2)
     f_norm_bar = fig_normalized_bar_comparison(df_view, p1, p2)
 
-    # 9. Tabela de Registos (Garante 1 linha por atleta sem repetições)
+    # 9. Tabela de Registos
     tabela_registos = []
     if 'player_name' in df_view.columns:
         for _, r in df_view.iterrows():
@@ -206,15 +204,29 @@ def dashboard_page(
 
 @router.post("/upload")
 async def process_upload(request: Request, file: UploadFile = File(...)):
-    """Processa o upload do CSV e redireciona para a vista limpa do dashboard."""
+    """Processa o upload do CSV e trata a resposta de forma síncrona com o contrato."""
     try:
         conteudo_bytes = await file.read()
         res = processar_csv_upload(conteudo_bytes)
+
+        # Se houver erros de validação ou rejeição do ficheiro
+        if not res.get("sucesso", True):
+            return templates.TemplateResponse(
+                "upload.html",
+                {
+                    "request": request,
+                    "erro": res.get("mensagem", "Erro ao processar o ficheiro CSV."),
+                    "erros_detalhe": res.get("erros", [])
+                }
+            )
+
+        # Se for bem-sucedido, redireciona para o dashboard
         return RedirectResponse(url="/dashboard", status_code=303)
+
     except Exception as e:
         return templates.TemplateResponse(
             "upload.html", 
-            {"request": request, "erro": f"Erro ao processar ficheiro: {str(e)}"}
+            {"request": request, "erro": f"Erro inesperado ao processar ficheiro: {str(e)}"}
         )
 
 
