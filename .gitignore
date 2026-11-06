@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 app.db
 .DS_Store
+
+venv/
+.venv/
