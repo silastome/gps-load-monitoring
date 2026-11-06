@@ -2,16 +2,18 @@
 ===============================================================================
 ROUTER DE ROTAS E ENDPOINTS WEB (FASTAPI)
 ===============================================================================
-Descrição: Define as rotas do dashboard web, realizando o filtro por data
-           específica (Ponto 2.1) e a agregação limpa por atleta para a vista
-           longitudinal global (Ponto 2.2).
+Descrição: Define as rotas do dashboard web, realizando a extração e a 
+           estruturação dos dados relacionais do SQLite/CSV para o template 
+           v5_Elite, além de gerir o upload e o reset da base de dados.
 ===============================================================================
 """
 
 import io
 import os
+import json
 from pathlib import Path
 import pandas as pd
+import numpy as np
 
 from fastapi import APIRouter, Request, UploadFile, File, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -39,6 +41,44 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 router = APIRouter()
 
 
+def estruturar_sessoes_json(df_full: pd.DataFrame) -> str:
+    """Converte o DataFrame completo num JSON estruturado por data e atleta para o v5_Elite."""
+    if df_full is None or df_full.empty or "date" not in df_full.columns:
+        return "{}"
+
+    df_copy = df_full.copy()
+    df_copy['date_str'] = pd.to_datetime(df_copy['date']).dt.strftime('%Y-%m-%d')
+    base_sessoes = {}
+
+    for data_str, group in df_copy.groupby('date_str'):
+        atletas = []
+        for _, row in group.iterrows():
+            rsei_val = float(row.get('rsei_individual', row.get('rsei', 0.0))) if pd.notna(row.get('rsei_individual', row.get('rsei'))) else 0.0
+            ietj_val = float(row.get('ietj', 80.0)) if pd.notna(row.get('ietj')) else 80.0
+            
+            # Alerta se RSEI > 1.05 ou zona de risco no ACWR
+            alertas_val = 1 if (rsei_val > 1.05 or row.get('acwr_zone') == 'Spike Zone (>1.50)') else 0
+
+            atleta_obj = {
+                "id": str(row.get('player_name', 'Atleta')),
+                "pos": str(row.get('posicao', row.get('Posicao', 'Plantel'))),
+                "dist": round(float(row.get('distance_m', 0.0)), 1) if pd.notna(row.get('distance_m')) else 0.0,
+                "pl": round(float(row.get('player_load', 0.0)), 1) if pd.notna(row.get('player_load')) else 0.0,
+                "vmax": round(float(row.get('top_speed_kmh', 0.0)), 1) if pd.notna(row.get('top_speed_kmh')) else 0.0,
+                "int": round(float(row.get('distance_per_min', 0.0)), 1) if pd.notna(row.get('distance_per_min')) else 0.0,
+                "accel": round(float(row.get('max_acceleration', 0.0)), 2) if pd.notna(row.get('max_acceleration')) else 0.0,
+                "desacel": round(float(row.get('max_deceleration', 0.0)), 2) if pd.notna(row.get('max_deceleration')) else 0.0,
+                "rsei": round(rsei_val, 3),
+                "ietj": round(ietj_val, 1),
+                "alertas": alertas_val
+            }
+            atletas.append(atleta_obj)
+        
+        base_sessoes[data_str] = atletas
+
+    return json.dumps(base_sessoes, ensure_ascii=False)
+
+
 @router.get("/", response_class=HTMLResponse)
 def upload_page(request: Request):
     """Página inicial para carregamento de ficheiros CSV."""
@@ -53,7 +93,7 @@ def dashboard_page(
     p2: str = Query("Mediana da Equipa"),
     aba_ativa: str = Query("tab1")
 ):
-    """Renderiza a interface do dashboard interativo."""
+    """Renderiza a interface do dashboard interativo v5_Elite com dados reais."""
     try:
         df_full, _ = carregar_dashboard()
     except Exception:
@@ -62,24 +102,25 @@ def dashboard_page(
     if df_full is None or df_full.empty:
         return RedirectResponse(url="/", status_code=303)
 
-    # 1. Datas Disponíveis (Ordenadas do mais recente para o mais antigo)
+    # 1. Serializar todas as sessões para o motor JavaScript do v5_Elite
+    sessoes_json = estruturar_sessoes_json(df_full)
+
+    # 2. Datas Disponíveis (Ordenadas da mais recente para a mais antiga)
     if "date" in df_full.columns and not df_full["date"].dropna().empty:
         datas_disponiveis = [d.strftime("%Y-%m-%d") for d in df_full["date"].dropna().dt.date.unique()]
         datas_disponiveis.sort(reverse=True)
     else:
         datas_disponiveis = []
 
-    # 2. Definição da Sessão Ativa por Padrão (Última Sessão Carregada)
+    # 3. Definição da Sessão Ativa
     if data_sessao is None and datas_disponiveis:
         data_sessao = datas_disponiveis[0]
 
-    # 3. Tratamento das Vistas: Sessão Única vs Agregação Longitudinal
+    # 4. Tratamento das Vistas
     if data_sessao and data_sessao in datas_disponiveis:
-        # Filtra estritamente a data selecionada (1 registo por atleta)
         df_view = df_full[df_full["date"].dt.strftime("%Y-%m-%d") == data_sessao].copy()
         sessao_ativa = data_sessao
     else:
-        # Vista "Todas as Sessões" -> Agrupa por atleta (Média/Máximo)
         sessao_ativa = "Todas as Sessões (Média da Equipa)"
         agg_rules = {}
         for c in ['duration_min', 'distance_m', 'player_load', 'distance_per_min', 'hsr_m', 'sprint_m']:
@@ -94,11 +135,10 @@ def dashboard_page(
         else:
             df_view = df_full.copy()
 
-    # Garantir deduplicação estrita por atleta na vista do painel
     if 'player_name' in df_view.columns:
         df_view = df_view.drop_duplicates(subset=['player_name']).copy()
 
-    # 4. Lista de Atletas Disponíveis
+    # 5. Lista de Atletas Disponíveis
     if "player_name" in df_view.columns:
         atletas_disponiveis = sorted(df_view["player_name"].dropna().astype(str).unique().tolist())
     else:
@@ -107,12 +147,11 @@ def dashboard_page(
     if p1 not in atletas_disponiveis and atletas_disponiveis:
         p1 = atletas_disponiveis[0]
 
-    # 5. Registos Ativos
+    # 6. Registos Ativos e Metadados Globais
     df_active = df_view[df_view["distance_m"] > 0] if "distance_m" in df_view.columns else df_view
     if df_active.empty:
         df_active = df_view
 
-    # 6. Metadados Globais
     dist_media = df_active["distance_m"].mean() if "distance_m" in df_active.columns and not df_active["distance_m"].dropna().empty else 0
     pl_medio   = df_active["player_load"].mean() if "player_load" in df_active.columns and not df_active["player_load"].dropna().empty else 0
     vmax_pico  = df_active["top_speed_kmh"].max() if "top_speed_kmh" in df_active.columns and not df_active["top_speed_kmh"].dropna().empty else 0
@@ -183,6 +222,7 @@ def dashboard_page(
         {
             "request": request,
             "meta": meta,
+            "sessoes_json": sessoes_json,
             "insights": insights_lista,
             "ficha_atleta": ficha_atleta_p1,
             "tabela_registos": tabela_registos,
@@ -204,12 +244,11 @@ def dashboard_page(
 
 @router.post("/upload")
 async def process_upload(request: Request, file: UploadFile = File(...)):
-    """Processa o upload do CSV e trata a resposta de forma síncrona com o contrato."""
+    """Processa o upload do CSV de forma assíncrona."""
     try:
         conteudo_bytes = await file.read()
         res = processar_csv_upload(conteudo_bytes)
 
-        # Se houver erros de validação ou rejeição do ficheiro
         if not res.get("sucesso", True):
             return templates.TemplateResponse(
                 "upload.html",
@@ -220,7 +259,6 @@ async def process_upload(request: Request, file: UploadFile = File(...)):
                 }
             )
 
-        # Se for bem-sucedido, redireciona para o dashboard
         return RedirectResponse(url="/dashboard", status_code=303)
 
     except Exception as e:
