@@ -15,12 +15,8 @@ from typing import Optional, Union
 import numpy as np
 import pandas as pd
 
-# Suprimir avisos de data/hora na conversão com pandas
 warnings.filterwarnings('ignore', category=UserWarning, module='pandas')
 
-# =============================================================================
-# MAPA EXTENDIDO DE COLUNAS MULTI-FORNECEDOR (CATAPULT ONE, STATSPORTS, ETC.)
-# =============================================================================
 MAPA_COLUNAS_POSSIVEIS = {
     'date': [
         'date', 'data', 'day', 'timestamp', 'datetime', 'sessaodata',
@@ -77,12 +73,10 @@ MAPA_COLUNAS_POSSIVEIS = {
 
 
 def clean_col(name: Union[str, int]) -> str:
-    """Remove caracteres especiais e converte para minúsculas."""
     return re.sub(r'[^a-zA-Z0-9]', '', str(name)).lower()
 
 
 def safe_numeric(series: pd.Series) -> pd.Series:
-    """Converte valores com vírgulas ou textos para tipo numérico seguro."""
     if series.dtype in [np.float64, np.int64]:
         return series
     cleaned = series.astype(str).str.replace(',', '.', regex=False)
@@ -91,7 +85,6 @@ def safe_numeric(series: pd.Series) -> pd.Series:
 
 
 def parse_data_robusta(series: pd.Series) -> pd.Series:
-    """Parser de datas resiliente para formatos Excel, ISO e europeus (DD/MM/YYYY)."""
     def parse_val(v):
         if pd.isna(v) or str(v).strip() == "":
             return pd.NaT
@@ -111,7 +104,6 @@ def parse_data_robusta(series: pd.Series) -> pd.Series:
 
 
 def anonimizar_atletas(series: pd.Series, prefixo: str = "A") -> pd.Series:
-    """Gera um código anónimo consistente para cada atleta (A01, A02...)."""
     nomes_unicos = sorted(series.dropna().astype(str).unique().tolist())
     mapa_anonimo = {}
     
@@ -132,7 +124,6 @@ def mapear_colunas(
     anonimizar: bool = True,
     prefixo_anonimo: str = "A"
 ) -> pd.DataFrame:
-    """Padroniza cabeçalhos, trata anonimização e converte unidades de medida."""
     df_out = df.copy()
     colunas_originais = {clean_col(c): c for c in df_out.columns}
     renomear = {}
@@ -146,19 +137,16 @@ def mapear_colunas(
 
     df_out = df_out.rename(columns=renomear)
 
-    # Filtrar apenas o período completo se houver sub-divisões
     if 'split_name' in df_out.columns:
         mask_all = df_out['split_name'].astype(str).str.lower().str.strip().isin(['all', 'full', 'sessao_completa', 'total', 'session'])
         if mask_all.any():
             df_out = df_out[mask_all].copy()
 
-    # Tratamento de Data
     if 'date' in df_out.columns:
         df_out['date'] = parse_data_robusta(df_out['date'])
     else:
         df_out['date'] = pd.Timestamp.today().normalize()
 
-    # Tratamento de Atleta
     if 'player_name' in df_out.columns:
         if anonimizar:
             df_out['player_name'] = anonimizar_atletas(df_out['player_name'], prefixo=prefixo_anonimo)
@@ -173,7 +161,6 @@ def mapear_colunas(
     if 'microcycle_day' not in df_out.columns:
         df_out['microcycle_day'] = 'MD'
 
-    # Normalização de Distância (m)
     if 'distance' in df_out.columns:
         df_out['distance'] = safe_numeric(df_out['distance'])
         val_med = df_out['distance'].dropna().median() if not df_out['distance'].dropna().empty else 0
@@ -182,7 +169,6 @@ def mapear_colunas(
         else:
             df_out['distance_m'] = df_out['distance']
 
-    # Normalização de Duração (min)
     if 'duration' in df_out.columns:
         df_out['duration'] = safe_numeric(df_out['duration'])
         val_med = df_out['duration'].dropna().median() if not df_out['duration'].dropna().empty else 0
@@ -206,7 +192,7 @@ def calcular_acwr_ewma(
     dias_agudo: int = 7, 
     dias_cronico: int = 28
 ) -> pd.DataFrame:
-    """Calcula ACWR (Rolling Average + EWMA) por atleta ao longo do tempo."""
+    """Calcula ACWR EWMA contínuo (Williams et al., 2017) preenchendo off-days."""
     if col_carga not in df.columns or 'date' not in df.columns or 'player_name' not in df.columns:
         return df
 
@@ -220,12 +206,8 @@ def calcular_acwr_ewma(
         df_daily = df_atl.groupby('date')[col_carga].sum().reindex(datas_completas, fill_value=0).reset_index()
         df_daily.columns = ['date', col_carga]
 
-        df_daily['acute_ra'] = df_daily[col_carga].rolling(window=dias_agudo, min_periods=1).mean()
-        df_daily['chronic_ra'] = df_daily[col_carga].rolling(window=dias_cronico, min_periods=1).mean()
-        df_daily['acwr_ra'] = df_daily['acute_ra'] / df_daily['chronic_ra'].replace(0, np.nan)
-
-        lambda_agudo = 2 / (dias_agudo + 1)
-        lambda_cronico = 2 / (dias_cronico + 1)
+        lambda_agudo = 2.0 / (dias_agudo + 1.0)
+        lambda_cronico = 2.0 / (dias_cronico + 1.0)
         
         df_daily['acute_ewma'] = df_daily[col_carga].ewm(alpha=lambda_agudo, adjust=False).mean()
         df_daily['chronic_ewma'] = df_daily[col_carga].ewm(alpha=lambda_cronico, adjust=False).mean()
@@ -233,7 +215,7 @@ def calcular_acwr_ewma(
 
         df_merged = pd.merge(
             df_atl, 
-            df_daily[['date', 'acute_ra', 'chronic_ra', 'acwr_ra', 'acute_ewma', 'chronic_ewma', 'acwr_ewma']], 
+            df_daily[['date', 'acute_ewma', 'chronic_ewma', 'acwr_ewma']], 
             on='date', 
             how='left'
         )
@@ -245,7 +227,7 @@ def calcular_acwr_ewma(
 
 
 def calcular_metricas_foster(df: pd.DataFrame, col_carga: str = 'player_load') -> pd.DataFrame:
-    """Calcula Monotonia e Strain (Foster, 1998) em janelas móveis de 7 dias."""
+    """Calcula Monotonia e Strain (Foster, 1998)."""
     if col_carga not in df.columns or 'date' not in df.columns:
         return df
 
@@ -269,7 +251,7 @@ def calcular_metricas_completas(
     anonimizar: bool = True,
     prefixo_anonimo: str = "A"
 ) -> pd.DataFrame:
-    """Função principal de entrada do pipeline de ingestão e normalização."""
+    """Função principal com RSEI individual por P95 e IETJ por MD real."""
     df = mapear_colunas(df, anonimizar=anonimizar, prefixo_anonimo=prefixo_anonimo)
     
     if 'player_name' in df.columns and 'date' in df.columns:
@@ -290,12 +272,21 @@ def calcular_metricas_completas(
     if 'max_deceleration' in df.columns:
         df['max_deceleration'] = df['max_deceleration'].abs()
 
+    # --- IETJ REAL (Baseado no MD real ou mediana de densidade) ---
     if 'player_load' in df.columns:
-        df['ietj'] = np.where(df['player_load'] > 0, ((df['player_load'] / 300.0) * 100).round(1), np.nan)
+        df_md = df[df['microcycle_day'] == 'MD']
+        ref_load = df_md['player_load'].median() if not df_md.empty and df_md['player_load'].median() > 0 else 300.0
+        df['ietj'] = np.where(df['player_load'] > 0, ((df['player_load'] / ref_load) * 100).round(1), np.nan)
 
-    if 'top_speed_kmh' in df.columns and 'hsr_m' in df.columns:
-        df['rsei'] = ((df['top_speed_kmh'] * 1.5) + (df['hsr_m'] / 100.0)).round(2)
+    # --- RSEI REAL (P95 Histórico Individual do Atleta) ---
+    if 'top_speed_kmh' in df.columns:
+        df.loc[df['top_speed_kmh'] > 38.5, 'top_speed_kmh'] = np.nan
+        p95_atleta = df.groupby('player_name')['top_speed_kmh'].transform(lambda x: x.quantile(0.95)).fillna(30.0)
+        df['rsei_individual'] = (df['top_speed_kmh'] / p95_atleta).round(3)
+        df['rsei'] = df['rsei_individual']
+        df['percent_vmax'] = (df['rsei_individual'] * 100.0).round(2)
 
+    # --- EWMA e Foster ---
     if 'date' in df.columns and len(df['date'].dropna().unique()) > 1:
         col_carga_ref = 'player_load' if 'player_load' in df.columns else 'distance_m'
         if col_carga_ref in df.columns:
