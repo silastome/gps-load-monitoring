@@ -6,18 +6,17 @@ TESTES AUTOMATIZADOS DE INGESTÃO E VALIDAÇÃO CSV (tests/test_upload.py)
 
 import os
 import sqlite3
-import pytest
 from services.upload_service import processar_csv_upload
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def init_test_db(db_path: str):
-    """Inicializa a base de dados temporária com a estrutura de colunas completa."""
+    """Inicializa a base de dados temporária garantindo a criação direta de todas as tabelas."""
     if os.path.exists(db_path):
         try:
             os.remove(db_path)
-        except Exception:
+        except OSError:
             pass
 
     conn = sqlite3.connect(db_path)
@@ -93,6 +92,7 @@ def init_test_db(db_path: str):
 
 
 def test_importacao_csv_valido(tmp_path):
+    """Testa a ingestão e validação bem-sucedida de um CSV com dados válidos."""
     db_temp = str(tmp_path / "test_app.db")
     init_test_db(db_temp)
 
@@ -108,6 +108,7 @@ def test_importacao_csv_valido(tmp_path):
 
 
 def test_rejeitar_colunas_ausentes(tmp_path):
+    """Testa a rejeição de ficheiros CSV com colunas obrigatórias ausentes."""
     db_temp = str(tmp_path / "test_app.db")
     init_test_db(db_temp)
 
@@ -117,6 +118,7 @@ def test_rejeitar_colunas_ausentes(tmp_path):
 
 
 def test_rejeitar_metricas_negativas(tmp_path):
+    """Testa a rejeição de registos contendo métricas com valores negativos."""
     db_temp = str(tmp_path / "test_app.db")
     init_test_db(db_temp)
 
@@ -130,6 +132,7 @@ def test_rejeitar_metricas_negativas(tmp_path):
 
 
 def test_prevenir_duplicacao(tmp_path):
+    """Testa o bloqueio de duplicados ao reimportar o mesmo ficheiro CSV."""
     db_temp = str(tmp_path / "test_app.db")
     init_test_db(db_temp)
 
@@ -144,3 +147,4 @@ def test_prevenir_duplicacao(tmp_path):
     res2 = processar_csv_upload(csv_conteudo, db_path=db_temp)
     assert res2["novos_registos"] == 0
     assert res2["linhas_rejeitadas"] == 1
+    
