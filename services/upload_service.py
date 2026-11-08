@@ -10,6 +10,7 @@ Descrição: Recebe ficheiros CSV de qualquer fornecedor de GPS, aplica o
 
 import io
 import os
+import sqlite3
 import pandas as pd
 import numpy as np
 
@@ -20,6 +21,76 @@ from repositories.registos_repo import registo_existe, inserir_registo
 from services.gps_processor import calcular_metricas_completas
 
 OUT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "outputs")
+
+
+def garantir_tabelas_db(conn: sqlite3.Connection):
+    """Garante a existência de todas as tabelas e colunas na base de dados antes da gravação."""
+    cursor = conn.cursor()
+    cursor.executescript("""
+        CREATE TABLE IF NOT EXISTS jogadores (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome TEXT UNIQUE,
+            nome_real TEXT UNIQUE,
+            codigo_anonimo TEXT UNIQUE
+        );
+        CREATE TABLE IF NOT EXISTS sessoes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            data TEXT,
+            data_sessao TEXT,
+            tipo TEXT,
+            tipo_sessao TEXT,
+            UNIQUE(data, tipo)
+        );
+        CREATE TABLE IF NOT EXISTS registos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            jogador_id INTEGER NOT NULL,
+            sessao_id INTEGER NOT NULL,
+            date TEXT,
+            player_name TEXT,
+            duration_secs REAL,
+            distance_m REAL,
+            distancia_m REAL,
+            player_load REAL,
+            top_speed_kmh REAL,
+            max_acceleration REAL,
+            max_deceleration REAL,
+            duration_min REAL,
+            duracao_min REAL,
+            distance_per_min REAL,
+            distancia_per_min REAL,
+            pl_per_min REAL,
+            microcycle_day TEXT,
+            week_id TEXT,
+            iso_tuple TEXT,
+            ano_iso INTEGER,
+            semana_iso INTEGER,
+            acute REAL,
+            chronic REAL,
+            acwr REAL,
+            acwr_zone TEXT,
+            percent_vmax REAL,
+            carga_total_semanal REAL,
+            monotony_player_load REAL,
+            strain_player_load REAL,
+            hsr_m REAL,
+            sprint_m REAL,
+            hsr_per_min REAL,
+            sprint_per_min REAL,
+            acc_count REAL,
+            dec_count REAL,
+            vmax_individual_p95 REAL,
+            rsei_individual REAL,
+            rsei REAL,
+            cluster INTEGER,
+            perfil_carga TEXT,
+            periodo TEXT,
+            ietj REAL,
+            FOREIGN KEY (jogador_id) REFERENCES jogadores(id),
+            FOREIGN KEY (sessao_id) REFERENCES sessoes(id),
+            UNIQUE(jogador_id, sessao_id)
+        );
+    """)
+    conn.commit()
 
 
 def safe_float(val):
@@ -136,8 +207,9 @@ def processar_csv_upload(
             "erros": erros_validacao
         }
 
-    # 4. GRAVAÇÃO EM BD (Transação Atómica)
+    # 4. GRAVAÇÃO EM BD (Transação Atémica)
     conn = get_db_connection(db_path)
+    garantir_tabelas_db(conn)
     cursor = conn.cursor()
 
     linhas_aceites = 0
