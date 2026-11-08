@@ -32,7 +32,10 @@ def limpar_base_dados(conn):
     cursor.execute("DELETE FROM registos")
     cursor.execute("DELETE FROM sessoes")
     cursor.execute("DELETE FROM jogadores")
-    cursor.execute("DELETE FROM sqlite_sequence")
+    try:
+        cursor.execute("DELETE FROM sqlite_sequence")
+    except sqlite3.OperationalError:
+        pass
     conn.commit()
 
 def obter_totais_dashboard(conn):

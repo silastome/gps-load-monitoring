@@ -227,24 +227,34 @@ def calcular_acwr_ewma(
 
 
 def calcular_metricas_foster(df: pd.DataFrame, col_carga: str = 'player_load') -> pd.DataFrame:
-    """Calcula Monotonia e Strain (Foster, 1998)."""
-    if col_carga not in df.columns or 'date' not in df.columns:
+    """Calcula Monotonia e Strain (Foster, 1998) em grelha diária contínua."""
+    if col_carga not in df.columns or 'date' not in df.columns or 'player_name' not in df.columns:
         return df
 
     dfs_atletas = []
     for atleta, df_atl in df.groupby('player_name'):
         df_atl = df_atl.copy().sort_values('date')
         
-        mean_7d = df_atl[col_carga].rolling(window=7, min_periods=1).mean()
-        std_7d = df_atl[col_carga].rolling(window=7, min_periods=1).std().fillna(1.0)
+        # Grelha diária completa para incluir dias sem treino no cálculo da variabilidade semanal
+        datas_completas = pd.date_range(start=df_atl['date'].min(), end=df_atl['date'].max(), freq='D')
+        df_daily = df_atl.groupby('date')[col_carga].sum().reindex(datas_completas, fill_value=0).reset_index()
+        df_daily.columns = ['date', col_carga]
+
+        mean_7d = df_daily[col_carga].rolling(window=7, min_periods=1).mean()
+        std_7d = df_daily[col_carga].rolling(window=7, min_periods=1).std().fillna(1.0)
         
-        df_atl['monotony'] = (mean_7d / std_7d.replace(0, 1.0)).round(2)
-        df_atl['strain'] = (df_atl[col_carga] * df_atl['monotony']).round(2)
+        df_daily['monotony'] = (mean_7d / std_7d.replace(0, 1.0)).round(2)
         
-        dfs_atletas.append(df_atl)
+        df_merged = pd.merge(
+            df_atl,
+            df_daily[['date', 'monotony']],
+            on='date',
+            how='left'
+        )
+        df_merged['strain'] = (df_merged[col_carga] * df_merged['monotony']).round(2)
+        dfs_atletas.append(df_merged)
 
     return pd.concat(dfs_atletas, ignore_index=True) if dfs_atletas else df
-
 
 def calcular_metricas_completas(
     df: pd.DataFrame, 

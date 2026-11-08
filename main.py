@@ -8,14 +8,19 @@ import logging
 from pathlib import Path
 import uvicorn
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from web.router import router
 
-# Configuração do Logger Principal (grava simultaneamente em app.log e na consola)
+# 1. Garantir existência da diretoria dedicada de logs
+LOG_DIR = Path("logs")
+LOG_DIR.mkdir(exist_ok=True)
+
+# 2. Configuração do Logger Principal (grava simultaneamente em logs/app.log e na consola)
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     handlers=[
-        logging.FileHandler("app.log", mode="a", encoding="utf-8"),
+        logging.FileHandler(LOG_DIR / "app.log", mode="a", encoding="utf-8"),
         logging.StreamHandler()
     ]
 )
@@ -29,6 +34,12 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# 3. Montar ficheiros estáticos caso a pasta exista
+STATIC_DIR = Path("web/static")
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+# 4. Incluir o router principal
 app.include_router(router)
 
 if __name__ == "__main__":

@@ -29,7 +29,7 @@ def distribuicao_fases(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def distribuicao_acwr(df: pd.DataFrame) -> pd.DataFrame:
-    """Calcula a distribuição percentual das zonas de risco do ACWR."""
+    """Calcula a distribuição percentual das zonas de risco do ACWR (EWMA)."""
     df_temp = df.copy()
 
     if 'acwr_zone' not in df_temp.columns or df_temp['acwr_zone'].dropna().empty:
@@ -42,7 +42,7 @@ def distribuicao_acwr(df: pd.DataFrame) -> pd.DataFrame:
                 if pd.isna(v) or v is None:
                     return None
                 if v < 0.80:
-                    return 'Sub-treino (< 0.80)'
+                    return 'Subtreino (< 0.80)'
                 elif 0.80 <= v <= 1.30:
                     return 'Sweet Spot (0.80 - 1.30)'
                 elif 1.30 < v <= 1.50:
@@ -100,7 +100,7 @@ def gerar_insights_sessao(df: pd.DataFrame) -> list:
     if df.empty:
         return insights
 
-    # Intensidade
+    # 1. Intensidade Média e Pico Individual
     if 'distance_per_min' in df.columns and not df['distance_per_min'].dropna().empty:
         int_media = df['distance_per_min'].mean()
         top_idx = df['distance_per_min'].idxmax()
@@ -111,7 +111,7 @@ def gerar_insights_sessao(df: pd.DataFrame) -> list:
             f"Maior pico registado pelo <b>{top_atleta}</b> ({top_val:.1f} m/min)."
         )
 
-    # ACWR
+    # 2. Alertas Clínicos de ACWR (> 1.50)
     col_acwr = next((c for c in ['acwr_ewma', 'acwr_ra', 'acwr'] if c in df.columns), None)
     if col_acwr and not df[col_acwr].dropna().empty:
         risco = df[df[col_acwr] > 1.50]
@@ -123,7 +123,7 @@ def gerar_insights_sessao(df: pd.DataFrame) -> list:
         else:
             insights.append("✅ <b>Carga Equilibrada:</b> Nenhum atleta em zona de pico crítico de ACWR.")
 
-    # Monotonia
+    # 3. Alerta de Monotonia de Foster (> 2.0)
     col_m = next((c for c in ['monotony', 'monotony_player_load'] if c in df.columns), None)
     if col_m and not df[col_m].dropna().empty:
         alta = df[df[col_m] > 2.0]
@@ -134,28 +134,39 @@ def gerar_insights_sessao(df: pd.DataFrame) -> list:
 
 
 def extrair_ficha_atleta(df: pd.DataFrame, player_name: str) -> dict:
-    """Extrai os indicadores individuais e calcula Z-Score do atleta em relação ao grupo."""
-    if 'player_name' not in df.columns:
+    """Extrai os indicadores da sessão mais recente do atleta e calcula o Z-Score em relação ao grupo."""
+    if 'player_name' not in df.columns or df.empty:
         return {}
         
     r = df[df['player_name'] == player_name]
     if r.empty:
         return {}
 
-    atleta_df = r.iloc[0]
+    # Ordenar temporalmente para garantir a sessão mais recente do atleta
+    if 'date' in r.columns:
+        atleta_df = r.sort_values('date').iloc[-1]
+    else:
+        atleta_df = r.iloc[-1]
     
     dist_val = float(atleta_df.get('distance_m', 0)) if pd.notnull(atleta_df.get('distance_m')) else 0.0
-    dist_media = df['distance_m'].mean() if 'distance_m' in df.columns and not df['distance_m'].dropna().empty else 0.0
-    dist_std = df['distance_m'].std() if 'distance_m' in df.columns and not df['distance_m'].dropna().empty else 1.0
     
-    z_dist = (dist_val - dist_media) / (dist_std if dist_std > 0 else 1.0)
+    # Cálculo defensivo de média e desvio padrão da equipa
+    dist_col = df['distance_m'].dropna() if 'distance_m' in df.columns else pd.Series(dtype=float)
+    dist_media = float(dist_col.mean()) if not dist_col.empty else 0.0
+    dist_std = float(dist_col.std()) if len(dist_col) > 1 else 0.0
+    
+    divisor_std = dist_std if (pd.notnull(dist_std) and dist_std > 0) else 1.0
+    z_dist = (dist_val - dist_media) / divisor_std
 
     return {
         "player_name": player_name,
+        "date": str(atleta_df.get('date', 'N/D'))[:10] if pd.notnull(atleta_df.get('date')) else "N/D",
         "distance_m": round(dist_val, 0),
         "player_load": round(float(atleta_df.get('player_load', 0)), 1) if pd.notnull(atleta_df.get('player_load')) else 0.0,
         "top_speed_kmh": round(float(atleta_df.get('top_speed_kmh', 0)), 1) if pd.notnull(atleta_df.get('top_speed_kmh')) else 0.0,
         "distance_per_min": round(float(atleta_df.get('distance_per_min', 0)), 1) if pd.notnull(atleta_df.get('distance_per_min')) else 0.0,
+        "ietj": round(float(atleta_df.get('ietj', 0)), 1) if pd.notnull(atleta_df.get('ietj')) else 0.0,
+        "rsei": round(float(atleta_df.get('rsei_individual', atleta_df.get('rsei', 0))), 3) if pd.notnull(atleta_df.get('rsei_individual', atleta_df.get('rsei', 0))) else 0.0,
         "z_score_distancia": round(float(z_dist), 2),
         "status_mbi": "Acima do Padrão" if z_dist > 0.5 else ("Abaixo do Padrão" if z_dist < -0.5 else "Dentro do Padrão")
     }

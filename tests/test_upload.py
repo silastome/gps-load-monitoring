@@ -13,59 +13,80 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def init_test_db(db_path: str):
-    """Inicializa a base de dados temporária usando o schema.sql oficial do projeto."""
+    """Inicializa a base de dados temporária com a estrutura de colunas completa."""
+    if os.path.exists(db_path):
+        try:
+            os.remove(db_path)
+        except Exception:
+            pass
+
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
-    # Tenta ler o esquema oficial em docs/schema.sql
-    schema_paths = [
-        os.path.join(BASE_DIR, "docs", "schema.sql"),
-        os.path.join(BASE_DIR, "schema.sql"),
-    ]
-    schema_carregado = False
-    for path in schema_paths:
-        if os.path.exists(path):
-            with open(path, "r", encoding="utf-8") as f:
-                cursor.executescript(f.read())
-            schema_carregado = True
-            break
-
-    # Fallback com todas as variações de colunas caso o ficheiro não seja encontrado
-    if not schema_carregado:
-        cursor.executescript("""
-            CREATE TABLE IF NOT EXISTS jogadores (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                nome TEXT,
-                nome_real TEXT UNIQUE,
-                codigo_anonimo TEXT UNIQUE
-            );
-            CREATE TABLE IF NOT EXISTS sessoes (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                data TEXT,
-                data_sessao TEXT,
-                tipo TEXT,
-                tipo_sessao TEXT
-            );
-            CREATE TABLE IF NOT EXISTS registos (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                jogador_id INTEGER NOT NULL,
-                sessao_id INTEGER NOT NULL,
-                microcycle_day TEXT,
-                duration_min REAL,
-                distancia_m REAL,
-                distance_per_min REAL,
-                player_load REAL,
-                top_speed_kmh REAL,
-                hsr_m REAL,
-                acc_count REAL,
-                dec_count REAL,
-                ietj REAL,
-                rsei REAL,
-                FOREIGN KEY (jogador_id) REFERENCES jogadores(id),
-                FOREIGN KEY (sessao_id) REFERENCES sessoes(id),
-                UNIQUE(jogador_id, sessao_id)
-            );
-        """)
+    cursor.executescript("""
+        CREATE TABLE IF NOT EXISTS jogadores (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome TEXT UNIQUE,
+            nome_real TEXT UNIQUE,
+            codigo_anonimo TEXT UNIQUE
+        );
+        CREATE TABLE IF NOT EXISTS sessoes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            data TEXT,
+            data_sessao TEXT,
+            tipo TEXT,
+            tipo_sessao TEXT,
+            UNIQUE(data, tipo)
+        );
+        CREATE TABLE IF NOT EXISTS registos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            jogador_id INTEGER NOT NULL,
+            sessao_id INTEGER NOT NULL,
+            date TEXT,
+            player_name TEXT,
+            duration_secs REAL,
+            distance_m REAL,
+            distancia_m REAL,
+            player_load REAL,
+            top_speed_kmh REAL,
+            max_acceleration REAL,
+            max_deceleration REAL,
+            duration_min REAL,
+            duracao_min REAL,
+            distance_per_min REAL,
+            distancia_per_min REAL,
+            pl_per_min REAL,
+            microcycle_day TEXT,
+            week_id TEXT,
+            iso_tuple TEXT,
+            ano_iso INTEGER,
+            semana_iso INTEGER,
+            acute REAL,
+            chronic REAL,
+            acwr REAL,
+            acwr_zone TEXT,
+            percent_vmax REAL,
+            carga_total_semanal REAL,
+            monotony_player_load REAL,
+            strain_player_load REAL,
+            hsr_m REAL,
+            sprint_m REAL,
+            hsr_per_min REAL,
+            sprint_per_min REAL,
+            acc_count REAL,
+            dec_count REAL,
+            vmax_individual_p95 REAL,
+            rsei_individual REAL,
+            rsei REAL,
+            cluster INTEGER,
+            perfil_carga TEXT,
+            periodo TEXT,
+            ietj REAL,
+            FOREIGN KEY (jogador_id) REFERENCES jogadores(id),
+            FOREIGN KEY (sessao_id) REFERENCES sessoes(id),
+            UNIQUE(jogador_id, sessao_id)
+        );
+    """)
 
     conn.commit()
     conn.close()

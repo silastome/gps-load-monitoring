@@ -7,17 +7,17 @@ Descrição: Garante o carregamento robusto e seguro do conjunto de dados
 ===============================================================================
 """
 
-import os
-import json
 import hashlib
+import json
+import os
 import pandas as pd
 
-BASE_DIR  = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT_DIR   = os.path.join(BASE_DIR, "outputs")
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT_DIR = os.path.join(BASE_DIR, "outputs")
 CACHE_DIR = os.path.join(BASE_DIR, "cache")
 
 
-def _sha256_curto(caminho, n_bytes=8):
+def _sha256_curto(caminho: str, n_bytes: int = 8) -> str:
     """Gera um hash SHA-256 encurtado para verificação de integridade do ficheiro."""
     if not os.path.exists(caminho):
         return "n/a"
@@ -33,10 +33,10 @@ def _sha256_curto(caminho, n_bytes=8):
 def carregar_dashboard(db_path=None):
     """
     Carrega o DataFrame principal e os metadados associados.
-    Procura em ordem:
+    Procura por ordem:
     1. outputs/conversao_dash_final.csv
     2. dados_base.csv (na raiz do projeto)
-    3. Base de Dados SQLite via repository (fallback)
+    3. Base de Dados SQLite via consulta SQL direta (fallback)
     """
     csv_dash = os.path.join(OUT_DIR, "conversao_dash_final.csv")
     csv_base = os.path.join(BASE_DIR, "dados_base.csv")
@@ -48,13 +48,19 @@ def carregar_dashboard(db_path=None):
         caminho_usado = csv_base
 
     if not caminho_usado:
-        # Fallback: tentar carregar diretamente da base de dados SQLite
+        # Fallback: carregar diretamente da base de dados SQLite
         try:
             from repositories import get_db_connection
-            from repositories.registos_repo import obter_dados_graficos
             conn = get_db_connection(db_path)
-            df_db = obter_dados_graficos(conn)
+            query = """
+                SELECT r.*, j.nome as player_name, s.data as date, s.tipo as microcycle_day
+                FROM registos r
+                JOIN jogadores j ON r.jogador_id = j.id
+                JOIN sessoes s ON r.sessao_id = s.id
+            """
+            df_db = pd.read_sql_query(query, conn)
             conn.close()
+
             if df_db is not None and not df_db.empty:
                 df = df_db.copy()
                 df["date"] = pd.to_datetime(df["date"], errors="coerce")
@@ -77,9 +83,9 @@ def carregar_dashboard(db_path=None):
         except Exception:
             pass
 
-        raise FileNotFoundError("Não foi encontrado o ficheiro de dados conversao_dash_final.csv nem dados_base.csv.")
+        raise FileNotFoundError("Não foi encontrado o ficheiro conversao_dash_final.csv, dados_base.csv nem a base de dados SQLite.")
 
-    # Leitura segura com tratamento de encodings
+    # Leitura segura do CSV com tratamento de encodings
     try:
         df = pd.read_csv(caminho_usado, encoding="utf-8-sig")
     except Exception:
@@ -91,7 +97,7 @@ def carregar_dashboard(db_path=None):
     else:
         df["date"] = pd.Timestamp.today().normalize()
 
-    # Leitura de relatórios de controlo de qualidade (QC)
+    # Leitura dos relatórios de Controlo de Qualidade (QC)
     qc_path = os.path.join(CACHE_DIR, "qc_report.json")
     qc = {}
     if os.path.exists(qc_path):
@@ -134,7 +140,7 @@ def carregar_dashboard(db_path=None):
     return df, meta
 
 
-def _ler_csv_seguro(caminho, colunas_fallback=None):
+def _ler_csv_seguro(caminho: str, colunas_fallback: list = None) -> pd.DataFrame:
     """Função auxiliar para leitura tolerante a falhas de CSVs secundários."""
     if not os.path.exists(caminho):
         return pd.DataFrame(columns=colunas_fallback) if colunas_fallback else pd.DataFrame()

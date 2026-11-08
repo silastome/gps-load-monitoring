@@ -4,8 +4,8 @@ MÓDULO DE GERAÇÃO DE GRÁFICOS INTERATIVOS (PLOTLY)
 ===============================================================================
 Descrição: Biblioteca universal de visualizações Plotly para análise de carga GPS.
            Inclui rankings, perfis mecânicos/neuromusculares, matrizes locomotoras,
-           comparadores multidimensionais, curva longitudinal de ACWR (EWMA),
-           distribuição por fase do microciclo e evolução de Foster (Monotonia/Strain).
+           matriz IETJ vs RSEI, comparadores multidimensionais, curva longitudinal
+           de ACWR (EWMA), distribuição por fase do microciclo e Foster.
 ===============================================================================
 """
 
@@ -52,13 +52,13 @@ def fig_ranking_bar(df: pd.DataFrame, col: str, title: str, x_label: str, unit: 
     """Gera um gráfico de barras horizontais ordenado por ranking do atleta."""
     if col not in df.columns or df.empty:
         fig = go.Figure()
-        fig.update_layout(**_layout_base(), title=f"<b>{title} - Sem Dados</b>")
+        fig.update_layout(**_layout_base(), title=f"<b>{title}Sem Dados</b>")
         return fig
 
     df_valid = df[df[col] > 0].dropna(subset=[col]).sort_values(col, ascending=True)
     if df_valid.empty:
         fig = go.Figure()
-        fig.update_layout(**_layout_base(), title=f"<b>{title} - Sem Registos Válidos</b>")
+        fig.update_layout(**_layout_base(), title=f"<b>{title}Sem Registos Válidos</b>")
         return fig
 
     colors = [color] * len(df_valid)
@@ -183,6 +183,53 @@ def fig_quadrantes_volume_intensidade(df: pd.DataFrame) -> go.Figure:
         title="<b>Matriz Locomotora: Volume (Distância) vs Intensidade (m/min)</b>",
         xaxis_title="Distância Total (m)",
         yaxis_title="Intensidade (Metros / Minuto)"
+    )
+    fig.update_layout(**layout)
+    return fig
+
+
+def fig_ietj_vs_rsei(df: pd.DataFrame) -> go.Figure:
+    """Matriz de Especificidade Neuromuscular: IETJ (%) vs RSEI (Individual P95)."""
+    cols_req = ['ietj', 'rsei_individual']
+    col_rsei = 'rsei_individual' if 'rsei_individual' in df.columns else 'rsei'
+    
+    if 'ietj' not in df.columns or col_rsei not in df.columns or df.empty:
+        fig = go.Figure()
+        fig.update_layout(**_layout_base(), title="<b>Matriz IETJ vs RSEI - Dados Ausentes</b>")
+        return fig
+
+    df_valid = df.dropna(subset=['ietj', col_rsei]).copy()
+    if df_valid.empty:
+        fig = go.Figure()
+        fig.update_layout(**_layout_base(), title="<b>Matriz IETJ vs RSEI - Sem Registos</b>")
+        return fig
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=df_valid['ietj'],
+        y=df_valid[col_rsei],
+        mode='markers+text',
+        text=df_valid['player_name'],
+        textposition="top center",
+        marker=dict(
+            size=14, 
+            color=df_valid['ietj'], 
+            colorscale='Magma', 
+            showscale=True, 
+            colorbar=dict(title="IETJ (%)")
+        ),
+        hovertemplate="<b>%{text}</b><br>IETJ: %{x:.1f}%<br>RSEI: %{y:.3f}<extra></extra>"
+    ))
+
+    # Linhas de referência metodológica (100% IETJ = Mediana de Jogo; 0.90 RSEI = 90% Vmáx)
+    fig.add_vline(x=100.0, line_dash="dash", line_color=COLOR_GREEN, annotation_text="MD Target (100%)")
+    fig.add_hline(y=0.90, line_dash="dash", line_color=COLOR_ORANGE, annotation_text="Limiar Neuromuscular (0.90)")
+
+    layout = _layout_base()
+    layout.update(
+        title="<b>Matriz de Especificidade: IETJ (%) vs RSEI (P95 Vmáx)</b>",
+        xaxis_title="IETJ - Especificidade Carga/Jogo (%)",
+        yaxis_title="RSEI - Velocidade Relativa Individual (P95)"
     )
     fig.update_layout(**layout)
     return fig
