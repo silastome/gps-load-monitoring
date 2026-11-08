@@ -1,9 +1,10 @@
 {
-    "python.defaultInterpreterPath": "/Users/Silas/Desktop/IEFP/gps-load-monitoring/venv/bin/python3",
+    "python.defaultInterpreterPath": "${workspaceFolder}/venv/bin/python3",
     "python.analysis.extraPaths": [
         "${workspaceFolder}"
     ],
     "python.linting.pylintArgs": [
-        "--init-hook=import sys; sys.path.append('.')"
+        "--init-hook=import sys; sys.path.append('.')",
+        "--disable=C0114,C0115,C0116,C0301,C0303,W0703,C0103"
     ]
 }
