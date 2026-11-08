@@ -4,11 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Monitorização de Carga GPS | Elite Engine v5.0 Ultimate</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>
         tailwind.config = {
@@ -30,7 +27,6 @@
         }
     </script>
     <style>
-        /* ESTILOS DE ECRÃ / MODO ESCURO (MANTIDOS) */
         body { background-color: #0F172A; color: #F8FAFC; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
         .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(51, 65, 85, 0.8); }
         .tab-btn { border-bottom: 3px solid transparent; transition: all 0.2s ease; }
@@ -39,123 +35,25 @@
         ::-webkit-scrollbar-track { background: #0F172A; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
         
-        /* ESTILOS DE IMPRESSÃO PDF PERFECT (4 PÁGINAS A4 LANDSCAPE EXATAS) */
         @media print {
-            @page {
-                size: A4 landscape;
-                margin: 4mm 6mm;
-            }
-
-            .no-print, header, nav, button, select, form, .top-controls {
-                display: none !important;
-            }
-
-            body {
-                background-color: #ffffff !important;
-                color: #000000 !important;
-                font-family: 'Segoe UI', system-ui, sans-serif !important;
-                font-size: 8pt !important;
-                margin: 0 !important;
-                padding: 0 !important;
-            }
-
-            /* Cada aba ocupa exatamente 1 página A4 sem cortes */
-            .tab-content {
-                display: block !important;
-                opacity: 1 !important;
-                visibility: visible !important;
-                page-break-after: always !important;
-                page-break-inside: avoid !important;
-                height: 195mm !important;
-                max-height: 195mm !important;
-                overflow: hidden !important;
-                margin: 0 !important;
-                padding: 0 !important;
-            }
-
-            .tab-content:last-child {
-                page-break-after: auto !important;
-            }
-
-            /* Cartões e Grelhas */
-            .glass-card, .box-panel {
-                background: #ffffff !important;
-                border: 1px solid #cbd5e1 !important;
-                color: #000000 !important;
-                box-shadow: none !important;
-                padding: 3px 6px !important;
-                margin-bottom: 4px !important;
-                border-radius: 4px !important;
-            }
-
-            .grid {
-                display: grid !important;
-                gap: 4px !important;
-            }
-
-            /* Forçar 2 colunas nos gráficos da Aba 1 e Aba 2 */
-            .grid-cols-1.md\:grid-cols-2, .grid-cols-2 {
-                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-            }
-
-            h1, h2, h3, h4, h5, h6, p, span, div, td, th {
-                color: #0f172a !important;
-                line-height: 1.15 !important;
-            }
-
-            .text-slate-400, .text-slate-300, .text-slate-500 {
-                color: #475569 !important;
-            }
-
-            .glass-card h3 {
-                margin: 0 !important;
-                font-size: 1.1rem !important;
-            }
-
-            .glass-card p {
-                margin: 0 !important;
-                font-size: 0.68rem !important;
-            }
-
-            /* Altura afinada dos gráficos */
-            .h-64, .h-72, .h-80 {
-                height: 115px !important;
-                max-height: 115px !important;
-            }
-
-            canvas {
-                max-height: 115px !important;
-                width: 100% !important;
-            }
-
-            /* Tabela do SSD (Página 3) com larguras equilibradas */
-            table {
-                width: 100% !important;
-                border-collapse: collapse !important;
-                font-size: 7pt !important;
-            }
-
-            th, td {
-                padding: 1.5px 3px !important;
-                border-bottom: 1px solid #cbd5e1 !important;
-                line-height: 1.1 !important;
-            }
-
-            th {
-                background-color: #f1f5f9 !important;
-                color: #0f172a !important;
-            }
-
-            /* Alocar 48% da largura da tabela para o texto de prescrição */
-            td:nth-child(5) {
-                width: 48% !important;
-            }
+            @page { size: A4 landscape; margin: 4mm 6mm; }
+            .no-print, header, nav, button, select, form, .top-controls { display: none !important; }
+            body { background-color: #ffffff !important; color: #000000 !important; font-size: 8pt !important; margin: 0 !important; padding: 0 !important; }
+            .tab-content { display: block !important; opacity: 1 !important; visibility: visible !important; page-break-after: always !important; height: 195mm !important; max-height: 195mm !important; overflow: hidden !important; margin: 0 !important; padding: 0 !important; }
+            .tab-content:last-child { page-break-after: auto !important; }
+            .glass-card, .box-panel { background: #ffffff !important; border: 1px solid #cbd5e1 !important; color: #000000 !important; box-shadow: none !important; padding: 3px 6px !important; margin-bottom: 4px !important; border-radius: 4px !important; }
+            .grid { display: grid !important; gap: 4px !important; }
+            .grid-cols-1.md\:grid-cols-2, .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+            h1, h2, h3, h4, h5, h6, p, span, div, td, th { color: #0f172a !important; line-height: 1.15 !important; }
+            .h-64, .h-72, .h-80 { height: 115px !important; max-height: 115px !important; }
+            canvas { max-height: 115px !important; width: 100% !important; }
+            table { width: 100% !important; border-collapse: collapse !important; font-size: 7pt !important; }
+            th, td { padding: 1.5px 3px !important; border-bottom: 1px solid #cbd5e1 !important; }
         }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
 
-    <!-- HEADER / TOP NAV -->
     <header class="glass-card sticky top-0 z-50 border-b border-cardBorder px-6 py-4 flex flex-wrap justify-between items-center gap-4">
         <div class="flex items-center space-x-3">
             <div class="p-2.5 bg-blue-500/10 rounded-xl border border-blue-500/20 text-accentBlue">
@@ -164,13 +62,12 @@
             <div>
                 <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
                     Sistema de Monitorização de Carga GPS 
-                    <span class="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-accentBlue border border-blue-500/30 font-semibold" id="total-sessoes-badge">v5.0 Elite Ultimate (77 Sessões)</span>
+                    <span class="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-accentBlue border border-blue-500/30 font-semibold" id="total-sessoes-badge">Painel Operacional</span>
                 </h1>
                 <p class="text-xs text-slate-400">Painel Operacional de Análise de Desempenho e Performance da Equipa</p>
             </div>
         </div>
 
-        <!-- Controls -->
         <div class="flex items-center gap-3 text-xs no-print flex-wrap">
             <div class="flex items-center bg-slate-800 border border-slate-700 rounded-lg p-1.5 shadow-md">
                 <i data-lucide="calendar" class="w-4 h-4 text-accentBlue ml-1 mr-1.5"></i>
@@ -181,18 +78,17 @@
 
             <button onclick="exportarPDFCompleto()" class="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium transition cursor-pointer shadow">
                 <i data-lucide="file-down" class="w-4 h-4"></i>
-                <span>Exportar PDF Completo (Todas as Abas)</span>
+                <span>Exportar PDF Completo</span>
             </button>
         </div>
     </header>
 
-    <!-- NAVIGATION TABS -->
     <div class="bg-slate-900 border-b border-cardBorder px-6 flex space-x-2 text-sm text-slate-400 no-print overflow-x-auto">
         <button onclick="switchTab('sessao')" id="tab-sessao" class="tab-btn active px-4 py-3.5 flex items-center gap-2 hover:text-slate-200 transition">
             <i data-lucide="zap" class="w-4 h-4"></i> <span>1. Relatório Pós-Sessão</span>
         </button>
         <button onclick="switchTab('longitudinal')" id="tab-longitudinal" class="tab-btn px-4 py-3.5 flex items-center gap-2 hover:text-slate-200 transition">
-            <i data-lucide="trending-up" class="w-4 h-4"></i> <span>2. Dashboard Longitudinal (77 Dias)</span>
+            <i data-lucide="trending-up" class="w-4 h-4"></i> <span>2. Dashboard Longitudinal</span>
         </button>
         <button onclick="switchTab('ssd')" id="tab-ssd" class="tab-btn px-4 py-3.5 flex items-center gap-2 hover:text-slate-200 transition">
             <i data-lucide="brain-circuit" class="w-4 h-4"></i> <span>3. Suporte à Decisão (SSD)</span>
@@ -202,16 +98,10 @@
         </button>
     </div>
 
-    <!-- MAIN CONTENT AREA -->
     <main class="flex-1 p-6 space-y-8 max-w-[1600px] w-full mx-auto">
 
-        <!-- ==================== TAB 1: SESSÃO DIÁRIA ==================== -->
+        <!-- TAB 1: SESSÃO DIÁRIA -->
         <div id="content-sessao" class="tab-content space-y-6">
-            <div class="border-b border-slate-700/50 pb-2 hidden print:block">
-                <h2 class="text-lg font-bold text-slate-200">1. Relatório Pós-Sessão Diário</h2>
-            </div>
-            
-            <!-- KPIS TOP BAR -->
             <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div class="glass-card p-4 rounded-xl border border-cardBorder">
                     <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Atletas Ativos</p>
@@ -240,7 +130,6 @@
                 </div>
             </div>
 
-            <!-- INSIGHTS METODOLÓGICOS -->
             <div class="glass-card p-4 rounded-xl border border-cardBorder space-y-2 text-xs">
                 <h4 class="font-bold text-slate-200 flex items-center gap-2">
                     <i data-lucide="lightbulb" class="w-4 h-4 text-accentYellow"></i> Insights Metodológicos da Sessão Selecionada (<span id="txt-data-sessao-atual">-</span>)
@@ -258,7 +147,6 @@
                 </div>
             </div>
 
-            <!-- CHARTS ROW 1 -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="glass-card p-5 rounded-2xl border border-cardBorder">
                     <div class="flex justify-between items-center mb-4">
@@ -285,7 +173,6 @@
                 </div>
             </div>
 
-            <!-- CHARTS ROW 2 -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="glass-card p-5 rounded-2xl border border-cardBorder">
                     <div class="flex justify-between items-center mb-4">
@@ -313,39 +200,35 @@
             </div>
         </div>
 
-        <!-- ==================== TAB 2: DASHBOARD LONGITUDINAL ==================== -->
+        <!-- TAB 2: DASHBOARD LONGITUDINAL DINÂMICO -->
         <div id="content-longitudinal" class="tab-content space-y-6 hidden">
-            <div class="border-b border-slate-700/50 pb-2 hidden print:block">
-                <h2 class="text-lg font-bold text-slate-200">2. Dashboard Longitudinal (77 Dias)</h2>
-            </div>
-            
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div class="glass-card p-4 rounded-xl border border-cardBorder">
                     <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Observações Válidas</p>
-                    <h3 class="text-2xl font-bold text-white mt-1">1.540 <span class="text-xs font-normal text-slate-400">(99,5% retenção)</span></h3>
-                    <p class="text-[11px] text-accentGreen mt-1">09/07/2025 a 03/11/2025 (77 dias)</p>
+                    <h3 class="text-2xl font-bold text-white mt-1"><span id="long-kpi-obs">0</span> <span class="text-xs font-normal text-slate-400">registos</span></h3>
+                    <p class="text-[11px] text-accentGreen mt-1" id="long-kpi-range">-</p>
                 </div>
                 <div class="glass-card p-4 rounded-xl border border-cardBorder">
                     <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">ACWR Sweet Spot</p>
-                    <h3 class="text-2xl font-bold text-accentGreen mt-1">92,4% <span class="text-xs font-normal text-slate-400">(1423 obs)</span></h3>
-                    <p class="text-[11px] text-slate-400 mt-1">1,2% em Spike Zone (>1.50)</p>
+                    <h3 class="text-2xl font-bold text-accentGreen mt-1"><span id="long-kpi-acwr-pct">0%</span></h3>
+                    <p class="text-[11px] text-slate-400 mt-1" id="long-kpi-acwr-sub">-</p>
                 </div>
                 <div class="glass-card p-4 rounded-xl border border-cardBorder">
-                    <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Especificidade Treino-Jogo (IETJ)</p>
-                    <h3 class="text-2xl font-bold text-accentBlue mt-1">77,02% <span class="text-xs font-normal text-slate-400">mediano</span></h3>
-                    <p class="text-[11px] text-slate-400 mt-1">MD = 100% | MD-3 = 90.4%</p>
+                    <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Especificidade (IETJ Médio)</p>
+                    <h3 class="text-2xl font-bold text-accentBlue mt-1"><span id="long-kpi-ietj">0%</span></h3>
+                    <p class="text-[11px] text-slate-400 mt-1">Média das Sessões Importadas</p>
                 </div>
                 <div class="glass-card p-4 rounded-xl border border-cardBorder">
-                    <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Monotonia Média (Foster)</p>
-                    <h3 class="text-2xl font-bold text-accentYellow mt-1">1,12 <span class="text-xs font-normal text-slate-400">u.a.</span></h3>
-                    <p class="text-[11px] text-accentGreen mt-1">Abaixo do limiar crítico (&lt;2.0)</p>
+                    <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">RSEI Médio da Equipa</p>
+                    <h3 class="text-2xl font-bold text-accentYellow mt-1"><span id="long-kpi-rsei">0.00</span></h3>
+                    <p class="text-[11px] text-accentGreen mt-1">Exposição Relativa à Vmáx</p>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="glass-card p-5 rounded-2xl border border-cardBorder">
                     <h3 class="font-semibold text-slate-200 text-sm mb-4 flex items-center gap-2">
-                        <i data-lucide="line-chart" class="w-4 h-4 text-accentBlue"></i> Carga de Trabalho Longitudinal (Player Load Médio por Sessão)
+                        <i data-lucide="line-chart" class="w-4 h-4 text-accentBlue"></i> EVOLUÇÃO TEMPORAL: Player Load Médio por Sessão
                     </h3>
                     <div class="h-72 relative">
                         <canvas id="chartLongitudinalPL"></canvas>
@@ -354,7 +237,7 @@
 
                 <div class="glass-card p-5 rounded-2xl border border-cardBorder">
                     <h3 class="font-semibold text-slate-200 text-sm mb-4 flex items-center gap-2">
-                        <i data-lucide="shield" class="w-4 h-4 text-accentGreen"></i> Distribuição de Zonas de Risco ACWR (EWMA 7/28)
+                        <i data-lucide="shield" class="w-4 h-4 text-accentGreen"></i> Zonas de ACWR da Base Carregada
                     </h3>
                     <div class="h-72 relative flex items-center justify-center">
                         <canvas id="chartACWRZonas"></canvas>
@@ -364,7 +247,7 @@
 
             <div class="glass-card p-5 rounded-2xl border border-cardBorder">
                 <h3 class="font-semibold text-slate-200 text-sm mb-4 flex items-center gap-2">
-                    <i data-lucide="compass" class="w-4 h-4 text-accentPurple"></i> Especificidade Cinemática (IETJ %) por Fase do Microciclo
+                    <i data-lucide="compass" class="w-4 h-4 text-accentPurple"></i> Especificidade IETJ Médio por Atleta
                 </h3>
                 <div class="h-72 relative">
                     <canvas id="chartIETJFases"></canvas>
@@ -372,17 +255,13 @@
             </div>
         </div>
 
-        <!-- ==================== TAB 3: SSD ==================== -->
+        <!-- TAB 3: SSD -->
         <div id="content-ssd" class="tab-content space-y-6 hidden">
-            <div class="border-b border-slate-700/50 pb-2 hidden print:block">
-                <h2 class="text-lg font-bold text-slate-200">3. Sistema de Suporte à Decisão (SSD)</h2>
-            </div>
-            
             <div class="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-slate-300 text-sm flex items-start gap-3">
                 <i data-lucide="info" class="w-5 h-5 text-accentBlue shrink-0 mt-0.5"></i>
                 <div>
                     <strong class="text-white font-semibold">Motor de Prescrição Automática baseada no RSEI & IETJ:</strong>
-                    <p class="text-xs text-slate-400 mt-1">O algoritmo agrupa automaticamente os atletas e emite recomendações com fundamentação científica para a próxima sessão (ex.: Mendiguchia et al., 2020 para vacinação neuromuscular em MD-2).</p>
+                    <p class="text-xs text-slate-400 mt-1">O algoritmo agrupa automaticamente os atletas e emite recomendações científicas para a próxima sessão.</p>
                 </div>
             </div>
 
@@ -395,7 +274,7 @@
                     <p class="text-xs text-slate-400 mb-3">RSEI &lt; 0.80</p>
                     <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 text-xs space-y-2">
                         <strong class="text-white block">Recomendação MD-2:</strong>
-                        <p class="text-slate-300">Adicionar <strong>2 a 3 sprints de 30m</strong> a 85-90% Vmáx (Protocolo de vacinação mecânica dos isquiotibiais).</p>
+                        <p class="text-slate-300">Adicionar 2 a 3 sprints de 30m a 85-90% Vmáx.</p>
                     </div>
                 </div>
 
@@ -404,10 +283,10 @@
                         <span class="text-xs font-bold text-accentBlue bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-full uppercase">Compensação (<span id="cnt-compensacao">0</span>)</span>
                         <i data-lucide="refresh-cw" class="w-4 h-4 text-accentBlue"></i>
                     </div>
-                    <p class="text-xs text-slate-400 mb-3">IETJ &lt; 90% (Baixo tempo de jogo)</p>
+                    <p class="text-xs text-slate-400 mb-3">IETJ &lt; 90%</p>
                     <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 text-xs space-y-2">
                         <strong class="text-white block">Recomendação MD+1:</strong>
-                        <p class="text-slate-300">Aumentar volume e densidade locomotora. Jogos reduzidos + corridas lineares em espaço amplo.</p>
+                        <p class="text-slate-300">Aumentar volume e densidade locomotora.</p>
                     </div>
                 </div>
 
@@ -416,10 +295,10 @@
                         <span class="text-xs font-bold text-accentGreen bg-green-500/10 border border-green-500/20 px-2.5 py-1 rounded-full uppercase">Titulares (<span id="cnt-titulares">0</span>)</span>
                         <i data-lucide="check-circle" class="w-4 h-4 text-accentGreen"></i>
                     </div>
-                    <p class="text-xs text-slate-400 mb-3">IETJ &ge; 90% (Elevada exposição)</p>
+                    <p class="text-xs text-slate-400 mb-3">IETJ &ge; 90%</p>
                     <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 text-xs space-y-2">
                         <strong class="text-white block">Recomendação:</strong>
-                        <p class="text-slate-300">Manutenção de carga. Volume moderado e tática em espaço amplo (10x10, 11x11).</p>
+                        <p class="text-slate-300">Manutenção de carga de microciclo padrão.</p>
                     </div>
                 </div>
 
@@ -431,12 +310,11 @@
                     <p class="text-xs text-slate-400 mb-3">Alertas RSEI &gt; 0</p>
                     <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 text-xs space-y-2">
                         <strong class="text-white block">Recomendação:</strong>
-                        <p class="text-slate-300">Reduzir exposição à Vmáx. Sessão regenerativa, mobilidade e baixa densidade mecânica.</p>
+                        <p class="text-slate-300">Reduzir exposição à Vmáx. Sessão regenerativa.</p>
                     </div>
                 </div>
             </div>
 
-            <!-- TABELA DETALHADA DE DECISÃO -->
             <div class="glass-card p-5 rounded-2xl border border-cardBorder">
                 <h3 class="font-semibold text-slate-200 text-sm mb-4 flex items-center gap-2">
                     <i data-lucide="list-checks" class="w-4 h-4 text-accentBlue"></i> Matriz de Prescrição Operacional por Atleta
@@ -460,13 +338,8 @@
             </div>
         </div>
 
-        <!-- ==================== TAB 4: COMPARADOR DE ATLETAS ==================== -->
+        <!-- TAB 4: COMPARADOR DE ATLETAS DINÂMICO -->
         <div id="content-comparador" class="tab-content space-y-6 hidden">
-            <div class="border-b border-slate-700/50 pb-2 hidden print:block">
-                <h2 class="text-lg font-bold text-slate-200">4. Comparador Biomecânico & Neuromuscular de Atletas</h2>
-            </div>
-            
-            <!-- SELETORES DE COMPARADOR -->
             <div class="glass-card p-4 rounded-xl border border-cardBorder flex flex-wrap justify-between items-center gap-4">
                 <div class="flex items-center gap-4 flex-wrap">
                     <div class="flex items-center gap-2">
@@ -486,9 +359,7 @@
                 </div>
             </div>
 
-            <!-- PAINEL COMPARATIVO -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- RADAR COMPARATIVO -->
                 <div class="glass-card p-5 rounded-2xl border border-cardBorder">
                     <h3 class="font-semibold text-slate-200 text-sm mb-4 flex items-center gap-2">
                         <i data-lucide="radar" class="w-4 h-4 text-accentBlue"></i> Perfil Biomecânico & Neuromuscular Relativo (%)
@@ -498,17 +369,15 @@
                     </div>
                 </div>
 
-                <!-- MATRIZ METRICA LADO A LADO -->
                 <div class="glass-card p-5 rounded-2xl border border-cardBorder flex flex-col justify-between">
                     <h3 class="font-semibold text-slate-200 text-sm mb-4 flex items-center gap-2">
                         <i data-lucide="sliders" class="w-4 h-4 text-accentGreen"></i> Diferencial Métrico Direto
                     </h3>
                     <div class="space-y-4 text-xs" id="matriz-comparacao">
-                        <!-- Gerado Dinamicamente -->
                     </div>
                     <div class="p-3 bg-slate-900/80 rounded-xl border border-slate-800 text-xs text-slate-400 mt-4">
                         <i data-lucide="shield-check" class="w-4 h-4 text-accentBlue inline mr-1"></i>
-                        <span>As diferenças percentuais usam o valor máximo registado na sessão como referência 100%.</span>
+                        <span>Diferenças percentuais calculadas com base no valor máximo registado na sessão.</span>
                     </div>
                 </div>
             </div>
@@ -516,68 +385,24 @@
 
     </main>
 
+    <!-- DADOS DAS SESSÕES EM FORMATO JSON (ISOLADO DO LINTER JS DO VS CODE) -->
+    <script id="sessoes-data" type="application/json">
+        {{ sessoes_json | safe }}
+    </script>
+
     <script>
-        // LISTA DE ATLETAS E POSIÇÕES REALISTAS
-        const atletasConfig = [
-            { id: "A02", pos: "DC" }, { id: "A03", pos: "DC" }, { id: "A04", pos: "DD" }, { id: "A05", pos: "DE" },
-            { id: "A06", pos: "MDC" }, { id: "A07", pos: "MC" }, { id: "A08", pos: "MC" }, { id: "A09", pos: "MDO" },
-            { id: "A10", pos: "EXT" }, { id: "A11", pos: "EXT" }, { id: "A12", pos: "PL" }, { id: "A13", pos: "PL" },
-            { id: "A14", pos: "DC" }, { id: "A15", pos: "DD" }, { id: "A16", pos: "MC" }, { id: "A17", pos: "EXT" },
-            { id: "A18", pos: "PL" }, { id: "A19", pos: "DE" }, { id: "A20", pos: "MDC" }, { id: "A22", pos: "EXT" }
-        ];
+        const baseDeSessoes = JSON.parse(document.getElementById("sessoes-data").textContent || "{}");
 
-        // GERADOR DINÂMICO COM VARIABILIDADE REALISTA ENTRE ATLETAS E POSIÇÕES
-        function gerar77SessoesComVariabilidade() {
-            const sessoes = {};
-            const startDate = new Date(2025, 6, 9);
-            
-            for (let i = 0; i < 77; i++) {
-                const currentDate = new Date(startDate);
-                currentDate.setDate(startDate.getDate() + i);
-                const dateStr = currentDate.toISOString().split('T')[0];
-                
-                const mod = i % 7;
-                let factor = 1.0;
-                if (mod === 0) factor = 1.7;      // Jogo (MD)
-                else if (mod === 1) factor = 0.45; // Recuperação (MD+1)
-                else if (mod === 3) factor = 1.25; // MD-3 Tático
-                else if (mod === 5) factor = 1.15; // MD-2 Velocidade
-                else if (mod === 6) factor = 0.55; // MD-1 Ativação
-
-                sessoes[dateStr] = atletasConfig.map((at, idx) => {
-                    // Variabilidade por Atleta e Posição
-                    const seed = Math.sin(idx * 99 + i * 17) * 0.5 + 0.5; 
-                    const posFactor = (at.pos === "EXT" || at.pos === "DD" || at.pos === "DE") ? 1.2 : 0.9;
-                    
-                    const dist = parseFloat(( (3200 + seed * 4500) * factor * posFactor ).toFixed(1));
-                    const pl = parseFloat(( (140 + seed * 260) * factor * posFactor ).toFixed(1));
-                    const vmax = parseFloat(( 24.0 + seed * 9.5 ).toFixed(1));
-                    const intVal = parseFloat(( (22.0 + seed * 65.0) * factor ).toFixed(1));
-                    const accel = parseFloat(( 3.8 + seed * 4.2 ).toFixed(2));
-                    const desacel = parseFloat(( 3.5 + seed * 4.8 ).toFixed(2));
-                    const rsei = parseFloat(( 0.62 + seed * 0.45 ).toFixed(3));
-                    const ietj = parseFloat(( Math.min(100, (45 + seed * 60) * factor) ).toFixed(1));
-                    const alertas = (rsei > 1.02 || (mod === 0 && seed > 0.88)) ? 1 : 0;
-
-                    return { id: at.id, pos: at.pos, dist, pl, vmax, int: intVal, accel, desacel, rsei, ietj, alertas };
-                });
-            }
-            return sessoes;
-        }
-
-        const baseDeSessoes = {{ sessoes_json | safe }};
-
-        // Instâncias Globais de Gráficos
         let chartDist, chartPL, chartVmax, chartAcel;
         let chartLongitudinalPL, chartACWR, chartIETJ;
         let chartRadarComparador;
         
         const datasOrdenadas = Object.keys(baseDeSessoes).sort().reverse();
-        let dataAtual = datasOrdenadas[0];
+        let dataAtual = datasOrdenadas.length > 0 ? datasOrdenadas[0] : "";
 
         window.onload = function() {
+            if (datasOrdenadas.length === 0) return;
             populardatas();
-            popularComparadorSelects();
             renderizarSessao(dataAtual);
             renderizarGraficosLongitudinais();
             lucide.createIcons();
@@ -592,22 +417,28 @@
                 opt.textContent = `Sessão ${d}`;
                 select.appendChild(opt);
             });
-            document.getElementById("total-sessoes-badge").innerText = `v5.0 Elite Ultimate (${datasOrdenadas.length} Sessões)`;
+            document.getElementById("total-sessoes-badge").innerText = `Base Operacional (${datasOrdenadas.length} Sessão/ões)`;
         }
 
-        function popularComparadorSelects() {
+        function popularComparadorSelects(atletasSessao) {
             const selA = document.getElementById("selectAtletaA");
             const selB = document.getElementById("selectAtletaB");
+            const valAAnterior = selA.value;
+            const valBAnterior = selB.value;
+
             selA.innerHTML = ""; selB.innerHTML = "";
 
-            atletasConfig.forEach((a, idx) => {
+            atletasSessao.forEach((a, idx) => {
                 const optA = document.createElement("option"); optA.value = a.id; optA.textContent = `${a.id} (${a.pos})`;
                 const optB = document.createElement("option"); optB.value = a.id; optB.textContent = `${a.id} (${a.pos})`;
-                if (idx === 0) optA.selected = true;
-                if (idx === 1) optB.selected = true;
                 selA.appendChild(optA);
                 selB.appendChild(optB);
             });
+
+            if (atletasSessao.length > 0) {
+                selA.value = atletasSessao.some(a => a.id === valAAnterior) ? valAAnterior : atletasSessao[0].id;
+                selB.value = atletasSessao.some(a => a.id === valBAnterior) ? valBAnterior : (atletasSessao[1] ? atletasSessao[1].id : atletasSessao[0].id);
+            }
         }
 
         function alterarSessaoData(novaData) {
@@ -624,7 +455,6 @@
             const targetContent = document.getElementById(`content-${aba}`);
             if (targetContent) targetContent.classList.remove("hidden");
 
-            // Forçar Resize do Chart.js para evitar gráficos feios/flats ao trocar de aba
             setTimeout(() => {
                 if (aba === 'longitudinal') {
                     if (chartLongitudinalPL) chartLongitudinalPL.resize();
@@ -642,22 +472,9 @@
         }
 
         function exportarPDFCompleto() {
-            // Mostrar temporariamente todas as abas para renderização do motor de impressão
             document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("hidden"));
-            
-            // Redimensionar todos os gráficos simultaneamente
-            if (chartLongitudinalPL) chartLongitudinalPL.resize();
-            if (chartACWR) chartACWR.resize();
-            if (chartIETJ) chartIETJ.resize();
-            if (chartDist) chartDist.resize();
-            if (chartPL) chartPL.resize();
-            if (chartVmax) chartVmax.resize();
-            if (chartAcel) chartAcel.resize();
-            if (chartRadarComparador) chartRadarComparador.resize();
-
             setTimeout(() => {
                 window.print();
-                // Restaurar visibilidade da aba ativa pós-impressão
                 const abaAtiva = document.querySelector(".tab-btn.active").id.replace("tab-", "");
                 switchTab(abaAtiva);
             }, 300);
@@ -691,23 +508,22 @@
             const maxInt = Math.max(...ints).toFixed(1);
             const topIntAtleta = atletas.find(a => a.int == maxInt)?.id || "-";
 
-            // Atualizar DOM KPIs
             document.getElementById("val-kpi-atletas").innerText = nAtletas;
             document.getElementById("val-kpi-dist").innerText = avgDist;
             document.getElementById("val-kpi-dist-range").innerText = `Intervalo: ${minDist}m - ${maxDist}m`;
             document.getElementById("val-kpi-pl").innerText = avgPL;
             document.getElementById("val-kpi-pl-max").innerText = `Max: ${maxPL} U.A.`;
             document.getElementById("val-kpi-vmax").innerText = maxVmax;
-            document.getElementById("val-kpi-vmax-top").innerText = `Atleta ${topVmaxAtleta}`;
+            document.getElementById("val-kpi-vmax-top").innerText = `${topVmaxAtleta}`;
             document.getElementById("val-kpi-int").innerText = avgInt;
-            document.getElementById("val-kpi-int-max").innerText = `Max: ${maxInt} (Atleta ${topIntAtleta})`;
+            document.getElementById("val-kpi-int-max").innerText = `Max: ${maxInt} (${topIntAtleta})`;
 
             document.getElementById("sub-dist-avg").innerText = `Média (${avgDist}m)`;
             document.getElementById("sub-pl-avg").innerText = `Média (${avgPL} U.A.)`;
             document.getElementById("sub-vmax-avg").innerText = `Média (${avgVmax} km/h)`;
 
             document.getElementById("ins-int").innerText = `${avgInt} m/min`;
-            document.getElementById("ins-int-top").innerText = `Atleta ${topIntAtleta} (${maxInt} m/min)`;
+            document.getElementById("ins-int-top").innerText = `${topIntAtleta} (${maxInt} m/min)`;
 
             const comAlertaACWR = atletas.filter(a => a.alertas > 0);
             document.getElementById("ins-acwr").innerText = comAlertaACWR.length > 0 
@@ -716,6 +532,7 @@
 
             renderizarGraficosSessao(atletas);
             renderizarSSD(atletas);
+            popularComparadorSelects(atletas);
             atualizarComparacao();
         }
 
@@ -728,12 +545,7 @@
                 type: 'bar',
                 data: {
                     labels: labels,
-                    datasets: [{
-                        label: 'Distância (m)',
-                        data: atletas.map(a => a.dist),
-                        backgroundColor: '#38BDF8',
-                        borderRadius: 4
-                    }]
+                    datasets: [{ label: 'Distância (m)', data: atletas.map(a => a.dist), backgroundColor: '#38BDF8', borderRadius: 4 }]
                 },
                 options: configComum
             });
@@ -743,12 +555,7 @@
                 type: 'bar',
                 data: {
                     labels: labels,
-                    datasets: [{
-                        label: 'Player Load (U.A.)',
-                        data: atletas.map(a => a.pl),
-                        backgroundColor: '#C084FC',
-                        borderRadius: 4
-                    }]
+                    datasets: [{ label: 'Player Load (U.A.)', data: atletas.map(a => a.pl), backgroundColor: '#C084FC', borderRadius: 4 }]
                 },
                 options: configComum
             });
@@ -758,14 +565,7 @@
                 type: 'line',
                 data: {
                     labels: labels,
-                    datasets: [{
-                        label: 'Vmáx (km/h)',
-                        data: atletas.map(a => a.vmax),
-                        borderColor: '#4ADE80',
-                        backgroundColor: 'rgba(74, 222, 128, 0.1)',
-                        fill: true,
-                        tension: 0.2
-                    }]
+                    datasets: [{ label: 'Vmáx (km/h)', data: atletas.map(a => a.vmax), borderColor: '#4ADE80', backgroundColor: 'rgba(74, 222, 128, 0.1)', fill: true, tension: 0.2 }]
                 },
                 options: configComum
             });
@@ -784,14 +584,45 @@
             });
         }
 
+        // CÁLCULOS DINÂMICOS DA ABA 2 LONGITUDINAL
         function renderizarGraficosLongitudinais() {
-            const configComum = { responsive: true, maintainAspectRatio: false };
-
             const datasReversas = [...datasOrdenadas].reverse();
+            let totalObs = 0;
+            let somaIETJ = 0;
+            let somarSEI = 0;
+            let countIETJ = 0;
+            let countSweet = 0;
+            let countSpike = 0;
+            let countSub = 0;
+
             const mediasPL = datasReversas.map(d => {
-                const arr = baseDeSessoes[d];
-                return (arr.reduce((acc, v) => acc + v.pl, 0) / arr.length).toFixed(1);
+                const arr = baseDeSessoes[d] || [];
+                totalObs += arr.length;
+                arr.forEach(a => {
+                    if (a.ietj) { somaIETJ += a.ietj; countIETJ++; }
+                    if (a.rsei) { somarSEI += a.rsei; }
+                    if (a.alertas > 0) countSpike++;
+                    else if (a.rsei < 0.8) countSub++;
+                    else countSweet++;
+                });
+                return arr.length > 0 ? (arr.reduce((acc, v) => acc + v.pl, 0) / arr.length).toFixed(1) : 0;
             });
+
+            const ietjMedio = countIETJ > 0 ? (somaIETJ / countIETJ).toFixed(1) : "0.0";
+            const rseiMedio = totalObs > 0 ? (somarSEI / totalObs).toFixed(2) : "0.00";
+            const sweetPct = totalObs > 0 ? ((countSweet / totalObs) * 100).toFixed(1) : "0.0";
+
+            document.getElementById("long-kpi-obs").innerText = totalObs;
+            document.getElementById("long-kpi-range").innerText = datasReversas.length > 1 
+                ? `${datasReversas[0]} a ${datasReversas[datasReversas.length - 1]} (${datasReversas.length} sessoes)` 
+                : `${datasReversas[0] || '-'} (1 sessão)`;
+            
+            document.getElementById("long-kpi-acwr-pct").innerText = `${sweetPct}%`;
+            document.getElementById("long-kpi-acwr-sub").innerText = `${countSpike} alerta(s) de Spike Zone`;
+            document.getElementById("long-kpi-ietj").innerText = `${ietjMedio}%`;
+            document.getElementById("long-kpi-rsei").innerText = rseiMedio;
+
+            const configComum = { responsive: true, maintainAspectRatio: false };
 
             if (chartLongitudinalPL) chartLongitudinalPL.destroy();
             chartLongitudinalPL = new Chart(document.getElementById("chartLongitudinalPL"), {
@@ -799,13 +630,12 @@
                 data: {
                     labels: datasReversas,
                     datasets: [{
-                        label: 'Player Load Médio da Equipa',
+                        label: 'Player Load Médio por Sessão',
                         data: mediasPL,
                         borderColor: '#38BDF8',
                         backgroundColor: 'rgba(56, 189, 248, 0.15)',
                         fill: true,
-                        tension: 0.3,
-                        pointRadius: 2
+                        tension: 0.3
                     }]
                 },
                 options: configComum
@@ -815,25 +645,27 @@
             chartACWR = new Chart(document.getElementById("chartACWRZonas"), {
                 type: 'doughnut',
                 data: {
-                    labels: ['Sweet Spot (0.8-1.3)', 'Sub-Carga (<0.8)', 'Spike Zone (>1.5)'],
+                    labels: ['Sweet Spot / Normal', 'Subexposição (RSEI < 0.8)', 'Pico / Alerta'],
                     datasets: [{
-                        data: [1423, 98, 19],
+                        data: [countSweet, countSub, countSpike],
                         backgroundColor: ['#4ADE80', '#FACC15', '#F87171']
                     }]
                 },
                 options: configComum
             });
 
+            // IETJ Médio por Atleta na última sessão
+            const ultimaSessao = baseDeSessoes[dataAtual] || [];
             if (chartIETJ) chartIETJ.destroy();
             chartIETJ = new Chart(document.getElementById("chartIETJFases"), {
                 type: 'bar',
                 data: {
-                    labels: ['MD-4 (Força)', 'MD-3 (Tática)', 'MD-2 (Velocidade)', 'MD-1 (Ativação)', 'MD (Jogo)'],
+                    labels: ultimaSessao.map(a => a.id),
                     datasets: [{
-                        label: 'Especificidade Cinemática (IETJ %)',
-                        data: [65.2, 90.4, 74.8, 55.1, 100.0],
+                        label: 'IETJ (%) na Sessão Selecionada',
+                        data: ultimaSessao.map(a => a.ietj),
                         backgroundColor: '#C084FC',
-                        borderRadius: 6
+                        borderRadius: 4
                     }]
                 },
                 options: configComum
@@ -852,7 +684,7 @@
                 if (a.alertas > 0) {
                     grupo = "Atenção / Risco";
                     badgeClass = "bg-red-500/10 text-accentRed border-red-500/20";
-                    prescricao = "Reduzir volume mecânico. Sessão de recuperação e libertação miofascial.";
+                    prescricao = "Reduzir volume mecânico. Sessão de recuperação miofascial.";
                     cntAtencao++;
                 } else if (a.rsei < 0.8) {
                     grupo = "Subexposto";
@@ -889,10 +721,14 @@
             document.getElementById("cnt-atencao").innerText = cntAtencao;
         }
 
-        // LÓGICA DO COMPARADOR DE ATLETAS (ABA 4)
         function atualizarComparacao() {
-            const idA = document.getElementById("selectAtletaA").value;
-            const idB = document.getElementById("selectAtletaB").value;
+            const selA = document.getElementById("selectAtletaA");
+            const selB = document.getElementById("selectAtletaB");
+
+            if (!selA || !selB || !selA.value || !selB.value) return;
+
+            const idA = selA.value;
+            const idB = selB.value;
             const atletas = baseDeSessoes[dataAtual] || [];
 
             const atlA = atletas.find(a => a.id === idA);
@@ -900,12 +736,11 @@
 
             if (!atlA || !atlB) return;
 
-            // Encontrar Máximos para Normalização no Radar (0-100%)
-            const maxDist = Math.max(...atletas.map(a => a.dist));
-            const maxPL = Math.max(...atletas.map(a => a.pl));
-            const maxVmax = Math.max(...atletas.map(a => a.vmax));
-            const maxAccel = Math.max(...atletas.map(a => a.accel));
-            const maxDesacel = Math.max(...atletas.map(a => a.desacel));
+            const maxDist = Math.max(...atletas.map(a => a.dist)) || 1;
+            const maxPL = Math.max(...atletas.map(a => a.pl)) || 1;
+            const maxVmax = Math.max(...atletas.map(a => a.vmax)) || 1;
+            const maxAccel = Math.max(...atletas.map(a => a.accel)) || 1;
+            const maxDesacel = Math.max(...atletas.map(a => a.desacel)) || 1;
 
             const radarA = [
                 (atlA.dist / maxDist) * 100,
@@ -923,29 +758,27 @@
                 (atlB.desacel / maxDesacel) * 100
             ];
 
-            // Render Radar
             if (chartRadarComparador) chartRadarComparador.destroy();
             chartRadarComparador = new Chart(document.getElementById("chartRadarComparador"), {
                 type: 'radar',
                 data: {
                     labels: ['Distância', 'Player Load', 'Vmáx', 'Aceleração', 'Desaceleração'],
                     datasets: [
-                        { label: `Atleta ${atlA.id} (${atlA.pos})`, data: radarA, borderColor: '#38BDF8', backgroundColor: 'rgba(56, 189, 248, 0.2)' },
-                        { label: `Atleta ${atlB.id} (${atlB.pos})`, data: radarB, borderColor: '#C084FC', backgroundColor: 'rgba(192, 132, 252, 0.2)' }
+                        { label: `${atlA.id} (${atlA.pos})`, data: radarA, borderColor: '#38BDF8', backgroundColor: 'rgba(56, 189, 248, 0.2)' },
+                        { label: `${atlB.id} (${atlB.pos})`, data: radarB, borderColor: '#C084FC', backgroundColor: 'rgba(192, 132, 252, 0.2)' }
                     ]
                 },
                 options: { responsive: true, maintainAspectRatio: false }
             });
 
-            // Render Matriz numécia
             const container = document.getElementById("matriz-comparacao");
             container.innerHTML = `
-                ${renderLinhaMatriz("Distância Total", `${atlA.dist} m`, `${atlB.dist} m`, atlA.dist > atlB.dist)}
-                ${renderLinhaMatriz("Player Load", `${atlA.pl} U.A.`, `${atlB.pl} U.A.`, atlA.pl > atlB.pl)}
-                ${renderLinhaMatriz("Vmáx Pico", `${atlA.vmax} km/h`, `${atlB.vmax} km/h`, atlA.vmax > atlB.vmax)}
-                ${renderLinhaMatriz("Pico Aceleração", `${atlA.accel} m/s²`, `${atlB.accel} m/s²`, atlA.accel > atlB.accel)}
-                ${renderLinhaMatriz("Pico Desaceleração", `${atlA.desacel} m/s²`, `${atlB.desacel} m/s²`, atlA.desacel > atlB.desacel)}
-                ${renderLinhaMatriz("Índice RSEI", atlA.rsei, atlB.rsei, atlA.rsei > atlB.rsei)}
+                ${renderLinhaMatriz("Distância Total", `${atlA.dist} m`, `${atlB.dist} m`, atlA.dist >= atlB.dist)}
+                ${renderLinhaMatriz("Player Load", `${atlA.pl} U.A.`, `${atlB.pl} U.A.`, atlA.pl >= atlB.pl)}
+                ${renderLinhaMatriz("Vmáx Pico", `${atlA.vmax} km/h`, `${atlB.vmax} km/h`, atlA.vmax >= atlB.vmax)}
+                ${renderLinhaMatriz("Pico Aceleração", `${atlA.accel} m/s²`, `${atlB.accel} m/s²`, atlA.accel >= atlB.accel)}
+                ${renderLinhaMatriz("Pico Desaceleração", `${atlA.desacel} m/s²`, `${atlB.desacel} m/s²`, atlA.desacel >= atlB.desacel)}
+                ${renderLinhaMatriz("Índice RSEI", atlA.rsei, atlB.rsei, atlA.rsei >= atlB.rsei)}
             `;
         }
 

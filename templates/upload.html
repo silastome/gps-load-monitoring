@@ -12,21 +12,57 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
         }
         .box {
             background-color: #1e293b;
             padding: 40px;
             border-radius: 12px;
             border: 1px solid #334155;
-            max-width: 480px;
+            max-width: 500px;
             width: 100%;
             text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
         }
-        h2 { margin-top: 0; color: #f8fafc; }
-        p { color: #94a3b8; font-size: 14px; line-height: 1.5; }
-        input[type="file"] { margin: 20px 0; width: 100%; color: #94a3b8; }
+        h2 { margin-top: 0; color: #f8fafc; font-size: 22px; }
+        p { color: #94a3b8; font-size: 14px; line-height: 1.5; margin-bottom: 25px; }
+        input[type="file"] { 
+            margin: 15px 0; 
+            width: 100%; 
+            color: #94a3b8;
+            background-color: #0f172a;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #334155;
+            box-sizing: border-box;
+        }
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+            padding: 12px;
+            background-color: #0f172a;
+            border-radius: 6px;
+            border: 1px solid #334155;
+            text-align: left;
+        }
+        .checkbox-container input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #0072B2;
+        }
+        .checkbox-container label {
+            color: #cbd5e1;
+            font-size: 13px;
+            cursor: pointer;
+            user-select: none;
+        }
         button {
             background-color: #0072B2;
             color: white;
@@ -37,23 +73,77 @@
             font-weight: bold;
             cursor: pointer;
             width: 100%;
+            transition: background-color 0.2s;
         }
         button:hover { background-color: #005a8d; }
-        .erro { background-color: #7f1d1d; color: #fca5a5; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 13px; }
+        
+        .reset-form {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #334155;
+        }
+        .btn-reset {
+            background-color: transparent;
+            color: #ef4444;
+            border: 1px solid #ef4444;
+            padding: 8px 16px;
+            font-size: 13px;
+        }
+        .btn-reset:hover {
+            background-color: #7f1d1d;
+            color: #fca5a5;
+        }
+
+        .erro { 
+            background-color: #7f1d1d; 
+            color: #fca5a5; 
+            padding: 12px; 
+            border-radius: 6px; 
+            margin-bottom: 20px; 
+            font-size: 13px; 
+            text-align: left;
+        }
+        .erros-lista {
+            margin: 8px 0 0 0;
+            padding-left: 20px;
+            max-height: 120px;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body>
     <div class="box">
         <h2>Processador Universal de GPS</h2>
-        <p>Submeta o ficheiro CSV exportado de qualquer plataforma (STATSports, Catapult, GPExe, Oliver, Wimu, etc.).</p>
+        <p>Submeta o ficheiro CSV exportado de qualquer plataforma de GPS (STATSports, Catapult, GPExe, Oliver, Wimu, etc.).</p>
         
         {% if erro %}
-        <div class="erro">{{ erro }}</div>
+        <div class="erro">
+            <strong>{{ erro }}</strong>
+            {% if erros_detalhe %}
+            <ul class="erros-lista">
+                {% for err in erros_detalhe %}
+                <li>{{ err }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
         {% endif %}
 
         <form action="/upload" method="post" enctype="multipart/form-data">
             <input type="file" name="file" accept=".csv" required>
+
+            <div class="checkbox-container">
+                <input type="checkbox" id="anonimizar" name="anonimizar" value="true">
+                <label for="anonimizar">Anonimizar nomes dos atletas durante a ingestão (ex: A01, A02)</label>
+            </div>
+
             <button type="submit">Processar e Gerar Métricas</button>
+        </form>
+
+        <form action="/reset" method="post" class="reset-form">
+            <button type="submit" class="btn-reset" onclick="return confirm('Tem a certeza que deseja limpar a base de dados operacional para uma nova sessão?');">
+                Limpar Base de Dados (Nova Sessão Limpa)
+            </button>
         </form>
     </div>
 </body>

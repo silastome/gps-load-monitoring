@@ -292,16 +292,25 @@ def processar_csv_upload(
             csv_final_path = os.path.join(OUT_DIR, "conversao_dash_final.csv")
             df_novos = pd.DataFrame(registos_sincronizacao)
 
+            # Garantir substituição total de registos da mesma data no CSV acumulado
             if os.path.exists(csv_final_path):
                 try:
                     df_existente = pd.read_csv(csv_final_path)
-                    df_concat = pd.concat([df_existente, df_novos], ignore_index=True)
-                    df_concat = df_concat.drop_duplicates(subset=['player_name', 'date']).sort_values(['date', 'player_name'])
-                    df_concat.to_csv(csv_final_path, index=False)
+                    
+                    # Converter datas para string YYYY-MM-DD para comparação precisa
+                    datas_novas = set(pd.to_datetime(df_novos['date']).dt.strftime('%Y-%m-%d').unique())
+                    df_existente['date_str'] = pd.to_datetime(df_existente['date']).dt.strftime('%Y-%m-%d')
+                    
+                    # Remove do CSV antigo todas as linhas pertencentes às datas que estão a ser importadas agora
+                    df_limpo = df_existente[~df_existente['date_str'].isin(datas_novas)].drop(columns=['date_str'], errors='ignore')
+                    
+                    df_concat = pd.concat([df_limpo, df_novos], ignore_index=True)
                 except Exception:
-                    df_novos.to_csv(csv_final_path, index=False)
+                    df_concat = df_novos
             else:
-                df_novos.to_csv(csv_final_path, index=False)
+                df_concat = df_novos
+
+            df_concat.to_csv(csv_final_path, index=False)
 
     except Exception as e:
         conn.rollback()
@@ -316,11 +325,16 @@ def processar_csv_upload(
     finally:
         conn.close()
 
+    data_ultima_sessao = None
+    if not df_proc.empty and 'date' in df_proc.columns:
+        data_ultima_sessao = pd.to_datetime(df_proc['date'].iloc[0]).strftime('%Y-%m-%d')
+
     return {
         "sucesso": True,
         "mensagem": f"Importação concluída com sucesso. {novos_registos} novos registos importados.",
         "novos_registos": novos_registos,
         "linhas_aceites": linhas_aceites,
         "linhas_rejeitadas": linhas_rejeitadas,
+        "data_sessao_carregada": data_ultima_sessao,
         "erros": erros
     }
