@@ -5,3 +5,9 @@ app.db
 
 venv/
 .venv/
+cache/
+outputs/
+logs/
+*.log
+relatorio_diagnostico.txt
+.vscode/
