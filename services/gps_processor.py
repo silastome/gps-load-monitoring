@@ -163,6 +163,8 @@ def mapear_colunas(
 
     df_out = df_out.rename(columns=renomear)
     df_out = df_out.loc[:, ~df_out.columns.duplicated()].copy()
+    cols_recalcular = ["acute_ewma", "chronic_ewma", "acwr_ewma", "monotony", "strain"]
+    df_out = df_out.drop(columns=[c for c in cols_recalcular if c in df_out.columns])
 
     # Filtrar apenas o bloco completo da sessão se o ficheiro contiver múltiplos splits
     if 'split_name' in df_out.columns:
