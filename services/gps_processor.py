@@ -159,8 +159,10 @@ def mapear_colunas(
             if clean_var in colunas_originais:
                 renomear[colunas_originais[clean_var]] = col_padrao
                 break
+                break
 
     df_out = df_out.rename(columns=renomear)
+    df_out = df_out.loc[:, ~df_out.columns.duplicated()].copy()
 
     # Filtrar apenas o bloco completo da sessão se o ficheiro contiver múltiplos splits
     if 'split_name' in df_out.columns:
