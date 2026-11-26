@@ -76,7 +76,7 @@ def estruturar_sessoes_json(df_full: pd.DataFrame) -> str:
 
 @router.get("/", response_class=HTMLResponse)
 def upload_page(request: Request):
-    return templates.TemplateResponse("upload.html", {"request": request, "erro": None})
+    return templates.TemplateResponse(request, "upload.html", { "erro": None})
 
 
 @router.get("/dashboard", response_class=HTMLResponse)
@@ -198,10 +198,7 @@ def dashboard_page(
                 'distance_per_min': fmt(r.get('distance_per_min'), 1) if is_valid else 'Sem Registo'
             })
 
-    return templates.TemplateResponse(
-        "dashboard.html",
-        {
-            "request": request,
+    return templates.TemplateResponse(request, "dashboard.html", {
             "meta": meta,
             "sessoes_json": sessoes_json,
             "insights": insights_lista,
@@ -235,10 +232,7 @@ async def process_upload(
         res = processar_csv_upload(conteudo_bytes, anonimizar=anonimizar)
 
         if not res.get("sucesso", True):
-            return templates.TemplateResponse(
-                "upload.html",
-                {
-                    "request": request,
+            return templates.TemplateResponse(request, "upload.html", {
                     "erro": res.get("mensagem", "Erro ao processar o ficheiro CSV."),
                     "erros_detalhe": res.get("erros", [])
                 }
@@ -251,9 +245,7 @@ async def process_upload(
         return RedirectResponse(url="/dashboard", status_code=303)
 
     except Exception as e:
-        return templates.TemplateResponse(
-            "upload.html", 
-            {"request": request, "erro": f"Erro inesperado ao processar ficheiro: {str(e)}"}
+        return templates.TemplateResponse(request, "upload.html", { "erro": f"Erro inesperado ao processar ficheiro: {str(e)}"}
         )
 
 
